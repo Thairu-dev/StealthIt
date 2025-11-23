@@ -25,7 +25,7 @@
 
 1.  **Clone the Repository**:
     ```bash
-    git clone https://github.com/yourusername/StealthIt.git
+    git clone https://github.com/Thairu-dev/StealthIt.git
     cd StealthIt
     ```
 
