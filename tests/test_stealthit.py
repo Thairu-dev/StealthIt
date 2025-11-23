@@ -17,10 +17,8 @@ class MockQThread(MockQObject):
         super().__init__(parent)
     def start(self):
         pass
-    def wait(self):
-        pass
-    def run(self):
-        pass
+    def wait(self): pass
+    def run(self): pass
 
 class MockQWidget(MockQObject):
     def __init__(self, parent=None):
@@ -42,6 +40,59 @@ class MockQWidget(MockQObject):
     def y(self): return 0
     def pos(self): return MagicMock()
     def width(self): return 100
+    def height(self): return 100
+    def size(self): return MagicMock()
+    def setAttribute(self, *args): pass
+    def setWindowFlags(self, *args): pass
+    def setGraphicsEffect(self, *args): pass
+    def setObjectName(self, *args): pass
+    def setSizePolicy(self, *args): pass
+    def setVerticalScrollBarPolicy(self, *args): pass
+    def document(self): return MagicMock()
+    def setPlaceholderText(self, *args): pass
+    def toPlainText(self): return ""
+    def clear(self): pass
+    def setPlainText(self, *args): pass
+    def setEchoMode(self, *args): pass
+    def setText(self, *args): pass
+    def text(self): return ""
+    def currentText(self): return ""
+    def setCurrentText(self, *args): pass
+    def addItems(self, *args): pass
+    def setEditable(self, *args): pass
+    def setCheckable(self, *args): pass
+    def setChecked(self, *args): pass
+    def addAction(self, *args): return MagicMock()
+    def addMenu(self, *args): return MagicMock()
+    def exec(self, *args): pass
+    def mapToGlobal(self, *args): return MagicMock()
+    def sizeHint(self): return MagicMock()
+    def setCursor(self, *args): pass
+    def setToolTip(self, *args): pass
+    def setShortcut(self, *args): pass
+    def setWordWrap(self, *args): pass
+    def setTextInteractionFlags(self, *args): pass
+    def setTextFormat(self, *args): pass
+    def setMaximumWidth(self, *args): pass
+    def setFrameShape(self, *args): pass
+    def setFrameShadow(self, *args): pass
+    def verticalScrollBar(self): return MagicMock()
+    def setWidget(self, *args): pass
+    def setWidgetResizable(self, *args): pass
+    def addTab(self, *args): pass
+    def setCurrentIndex(self, *args): pass
+    def setContentsMargins(self, *args): pass
+    def setSpacing(self, *args): pass
+    def addLayout(self, *args): pass
+    def addWidget(self, *args): pass
+    def addRow(self, *args): pass
+    def addStretch(self, *args): pass
+    def accept(self): pass
+    def reject(self): pass
+    def resize(self, *args): pass
+    def setFixedHeight(self, *args): pass
+    def setFixedWidth(self, *args): pass
+    def close(self): pass
     def height(self): return 100
     def size(self): return MagicMock()
     def setAttribute(self, *args): pass
@@ -118,6 +169,8 @@ class MockQPushButton(MockQWidget):
     def __init__(self, text="", parent=None):
         super().__init__(parent)
         self.clicked = MagicMock()
+    def setIcon(self, *args): pass
+    def setIconSize(self, *args): pass
 
 class MockQLineEdit(MockQWidget):
     Password = 1
@@ -238,6 +291,7 @@ module_patches = {
     "PIL.ImageGrab": mock_pil,
     "ctypes": mock_ctypes,
     "ctypes.wintypes": MagicMock(),
+    "qtawesome": MagicMock(),
 }
 
 # Import main within the patch context

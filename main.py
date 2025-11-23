@@ -15,6 +15,7 @@ from PIL import Image, ImageGrab
 import urllib.request
 import urllib.error
 from dotenv import load_dotenv, set_key
+import qtawesome as qta
 
 # Load environment variables
 load_dotenv()
@@ -389,12 +390,9 @@ class SettingsDialog(QDialog):
                 border-bottom-right-radius: 6px;
             }
             QComboBox::down-arrow {
-                image: none;
-                border-left: 5px solid transparent;
-                border-right: 5px solid transparent;
-                border-top: 6px solid #d1d5db;
-                width: 0;
-                height: 0;
+                image: url(resources/chevron-down.png);
+                width: 12px;
+                height: 12px;
                 margin-right: 8px;
             }
             QTabWidget::pane {
@@ -491,7 +489,8 @@ class SettingsDialog(QDialog):
         self.ollama_model_combo.addItems(cached_models)
         self.ollama_model_combo.setCurrentText(config["providers"]["ollama"].get("model", "llama3"))
         
-        btn_refresh_ollama = QPushButton("↻")
+        btn_refresh_ollama = QPushButton()
+        btn_refresh_ollama.setIcon(qta.icon('fa5s.sync-alt', color='#d1d5db'))
         btn_refresh_ollama.setFixedSize(30, 30)
         btn_refresh_ollama.setToolTip("Fetch Ollama Models")
         btn_refresh_ollama.clicked.connect(self.fetch_ollama_models)
@@ -645,14 +644,14 @@ class ControlBar(QFrame):
         layout.setContentsMargins(15, 5, 15, 5)
         layout.setSpacing(10)
 
-        # Drag Handle
-        self.drag_handle = QLabel("⋮⋮")
-        self.drag_handle.setStyleSheet("color: #6b7280; font-size: 16px; font-weight: bold;")
-        self.drag_handle.setCursor(Qt.SizeAllCursor)
-        layout.addWidget(self.drag_handle)
+        # Drag Handle Removed
+        # self.drag_handle = QLabel("⋮⋮")
+        # ...
 
         # Record Button
-        self.btn_record = QPushButton("🎤")
+        self.btn_record = QPushButton()
+        self.btn_record.setIcon(qta.icon('fa5s.microphone', color='#d1d5db'))
+        self.btn_record.setIconSize(QSize(20, 20))
         self.btn_record.setFixedSize(36, 36)
         self.btn_record.setToolTip("Toggle Recording (Ctrl+R)")
         self.btn_record.setShortcut("Ctrl+R")
@@ -660,7 +659,9 @@ class ControlBar(QFrame):
         layout.addWidget(self.btn_record)
 
         # Screenshot Button
-        self.btn_screenshot = QPushButton("📸")
+        self.btn_screenshot = QPushButton()
+        self.btn_screenshot.setIcon(qta.icon('fa5s.camera', color='#d1d5db'))
+        self.btn_screenshot.setIconSize(QSize(20, 20))
         self.btn_screenshot.setFixedSize(36, 36)
         self.btn_screenshot.setToolTip("Take Screenshot (Ctrl+Enter)")
         # Global hotkey handled in MainWindow
@@ -668,7 +669,9 @@ class ControlBar(QFrame):
         layout.addWidget(self.btn_screenshot)
 
         # Hide Button
-        self.btn_hide = QPushButton("👁")
+        self.btn_hide = QPushButton()
+        self.btn_hide.setIcon(qta.icon('fa5s.eye', color='#d1d5db'))
+        self.btn_hide.setIconSize(QSize(20, 20))
         self.btn_hide.setFixedSize(36, 36)
         self.btn_hide.setToolTip("Hide Window (Ctrl+\\)")
         # Global hotkey handled in MainWindow
@@ -676,7 +679,9 @@ class ControlBar(QFrame):
         layout.addWidget(self.btn_hide)
 
         # Settings Button
-        self.btn_settings = QPushButton("⚙")
+        self.btn_settings = QPushButton()
+        self.btn_settings.setIcon(qta.icon('fa5s.cog', color='#d1d5db'))
+        self.btn_settings.setIconSize(QSize(20, 20))
         self.btn_settings.setFixedSize(36, 36)
         self.btn_settings.setToolTip("Settings (Ctrl+,)")
         self.btn_settings.setShortcut("Ctrl+,")
@@ -684,7 +689,9 @@ class ControlBar(QFrame):
         layout.addWidget(self.btn_settings)
 
         # Collapse/Expand Button (Toggle)
-        self.btn_toggle = QPushButton("▼")
+        self.btn_toggle = QPushButton()
+        self.btn_toggle.setIcon(qta.icon('fa5s.chevron-down', color='#d1d5db'))
+        self.btn_toggle.setIconSize(QSize(20, 20))
         self.btn_toggle.setFixedSize(36, 36)
         self.btn_toggle.setToolTip("Expand/Collapse Chat (Ctrl+T)")
         self.btn_toggle.setShortcut("Ctrl+T")
@@ -692,7 +699,9 @@ class ControlBar(QFrame):
         layout.addWidget(self.btn_toggle)
 
         # Close Button
-        self.btn_close = QPushButton("✕")
+        self.btn_close = QPushButton()
+        self.btn_close.setIcon(qta.icon('fa5s.times', color='#d1d5db'))
+        self.btn_close.setIconSize(QSize(20, 20))
         self.btn_close.setFixedSize(36, 36)
         self.btn_close.setToolTip("Close App (Ctrl+W)")
         self.btn_close.setShortcut("Ctrl+W")
@@ -751,7 +760,9 @@ class ChatBubble(QWidget):
             self.label.setWordWrap(True) # Ensure it still wraps
         
         # Copy Button (Only for AI or if desired for User too, but usually AI)
-        self.btn_copy = QPushButton("📋")
+        self.btn_copy = QPushButton()
+        self.btn_copy.setIcon(qta.icon('fa5s.copy', color='#6b7280'))
+        self.btn_copy.setIconSize(QSize(14, 14))
         self.btn_copy.setFixedSize(24, 24)
         self.btn_copy.setToolTip("Copy to Clipboard")
         self.btn_copy.clicked.connect(self.copy_to_clipboard)
@@ -778,8 +789,8 @@ class ChatBubble(QWidget):
     def copy_to_clipboard(self):
         clipboard = QApplication.clipboard()
         clipboard.setText(self.text)
-        self.btn_copy.setText("✓")
-        QTimer.singleShot(2000, lambda: self.btn_copy.setText("📋"))
+        self.btn_copy.setIcon(qta.icon('fa5s.check', color='#10b981'))
+        QTimer.singleShot(2000, lambda: self.btn_copy.setIcon(qta.icon('fa5s.copy', color='#6b7280')))
 
 class TranscriptionItem(QWidget):
     def __init__(self, text):
@@ -795,7 +806,9 @@ class TranscriptionItem(QWidget):
         header_label = QLabel("Transcription:")
         header_label.setStyleSheet("color: #9ca3af; font-weight: bold; font-size: 12px;")
         
-        self.btn_copy = QPushButton("📋")
+        self.btn_copy = QPushButton()
+        self.btn_copy.setIcon(qta.icon('fa5s.copy', color='#9ca3af'))
+        self.btn_copy.setIconSize(QSize(14, 14))
         self.btn_copy.setFixedSize(24, 24)
         self.btn_copy.setToolTip("Copy to Clipboard")
         self.btn_copy.clicked.connect(self.copy_to_clipboard)
@@ -827,8 +840,8 @@ class TranscriptionItem(QWidget):
     def copy_to_clipboard(self):
         clipboard = QApplication.clipboard()
         clipboard.setText(self.text)
-        self.btn_copy.setText("✓")
-        QTimer.singleShot(2000, lambda: self.btn_copy.setText("📋"))
+        self.btn_copy.setIcon(qta.icon('fa5s.check', color='#10b981'))
+        QTimer.singleShot(2000, lambda: self.btn_copy.setIcon(qta.icon('fa5s.copy', color='#9ca3af')))
 
     def append_text(self, new_text):
         self.text += " " + new_text
@@ -867,6 +880,14 @@ class AutoResizingTextEdit(QTextEdit):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        
+        # Ensure resources dir exists
+        if not os.path.exists("resources"):
+            os.makedirs("resources")
+        
+        # Generate Icons for CSS
+        qta.icon('fa5s.chevron-down', color='#d1d5db').pixmap(16, 16).save("resources/chevron-down.png")
+        
         load_config()
         
         # Window Flags
@@ -973,7 +994,9 @@ class MainWindow(QMainWindow):
         # Shorten model name for display if needed
         display_model = model.replace("gemini-", "").replace("llama", "Llama ")
         
-        self.btn_model = QPushButton(f"🤖 {display_model} ▼")
+        self.btn_model = QPushButton(f" {display_model} ▼")
+        self.btn_model.setIcon(qta.icon('fa5s.robot', color='#d1d5db'))
+        self.btn_model.setIconSize(QSize(16, 16))
         self.btn_model.setCursor(Qt.PointingHandCursor)
         self.btn_model.clicked.connect(self.show_model_selector)
         self.btn_model.setStyleSheet("""
@@ -996,7 +1019,9 @@ class MainWindow(QMainWindow):
         self.toolbar_layout.addStretch()
         
         # Send Button
-        self.btn_send = QPushButton("➤")
+        self.btn_send = QPushButton()
+        self.btn_send.setIcon(qta.icon('fa5s.paper-plane', color='white'))
+        self.btn_send.setIconSize(QSize(16, 16))
         self.btn_send.setFixedSize(32, 32)
         self.btn_send.setToolTip("Send")
         self.btn_send.clicked.connect(self.handle_input)
@@ -1091,6 +1116,7 @@ class MainWindow(QMainWindow):
         
         # --- Gemini Models ---
         gemini_menu = menu.addMenu("Gemini")
+        gemini_menu.setIcon(qta.icon('fa5b.google', color='#d1d5db'))
         # Apply same style to submenu
         gemini_menu.setStyleSheet(menu.styleSheet())
         
@@ -1106,6 +1132,7 @@ class MainWindow(QMainWindow):
             
         # --- Ollama Models ---
         ollama_menu = menu.addMenu("Ollama")
+        ollama_menu.setIcon(qta.icon('fa5s.server', color='#d1d5db'))
         ollama_menu.setStyleSheet(menu.styleSheet())
         
         # Use cached models from config, NO network call here
@@ -1124,6 +1151,7 @@ class MainWindow(QMainWindow):
             
         menu.addSeparator()
         action_settings = menu.addAction("Configure Providers...")
+        action_settings.setIcon(qta.icon('fa5s.cog', color='#d1d5db'))
         action_settings.triggered.connect(self.open_settings)
         
         # Show relative to the button
@@ -1133,7 +1161,7 @@ class MainWindow(QMainWindow):
     def switch_model(self, provider, model_name):
         # Validation
         if provider == "gemini":
-            if not config["providers"]["gemini"].get("api_key"):
+            if not os.environ.get("GEMINI_API_KEY"):
                 QMessageBox.warning(self, "Setup Required", "Gemini API Key is missing. Please configure it in Settings.")
                 self.open_settings()
                 return
@@ -1151,7 +1179,8 @@ class MainWindow(QMainWindow):
         
         # Update Button Text
         display_model = model_name.replace("gemini-", "").replace("llama", "Llama ")
-        self.btn_model.setText(f"🤖 {display_model} ▼")
+        self.btn_model.setText(f" {display_model} ▼")
+        self.btn_model.setIcon(qta.icon('fa5s.robot', color='#d1d5db'))
 
     def set_active_provider(self, provider):
         config["active_provider"] = provider
@@ -1159,7 +1188,8 @@ class MainWindow(QMainWindow):
         # Text update handled in switch_model or init, but if called directly:
         model = config['providers'][provider].get('model', 'Unknown')
         display_model = model.replace("gemini-", "").replace("llama", "Llama ")
-        self.btn_model.setText(f"🤖 {display_model} ▼")
+        self.btn_model.setText(f" {display_model} ▼")
+        self.btn_model.setIcon(qta.icon('fa5s.robot', color='#d1d5db'))
 
     def setup_stealth(self):
         try:
@@ -1325,7 +1355,7 @@ class MainWindow(QMainWindow):
         if not self.is_expanded:
             self.is_expanded = True
             self.tabs.show()
-            self.control_bar.btn_toggle.setText("▲") # Show Collapse icon
+            self.control_bar.btn_toggle.setIcon(qta.icon('fa5s.chevron-up', color='#d1d5db')) # Show Collapse icon
             
             # Animate Height
             self.anim = QPropertyAnimation(self, b"size")
@@ -1339,7 +1369,7 @@ class MainWindow(QMainWindow):
         if self.is_expanded:
             self.is_expanded = False
             self.tabs.hide()
-            self.control_bar.btn_toggle.setText("▼") # Show Expand icon
+            self.control_bar.btn_toggle.setIcon(qta.icon('fa5s.chevron-down', color='#d1d5db')) # Show Expand icon
             
             # Animate Height
             self.anim = QPropertyAnimation(self, b"size")
@@ -1414,9 +1444,11 @@ class MainWindow(QMainWindow):
     def update_record_btn(self, is_recording):
         if is_recording:
             self.control_bar.btn_record.setStyleSheet("color: #ef4444; background-color: rgba(255,0,0,0.1);")
+            self.control_bar.btn_record.setIcon(qta.icon('fa5s.microphone', color='#ef4444'))
             self.current_transcript_item = None # Start new transcription block
         else:
             self.control_bar.btn_record.setStyleSheet("")
+            self.control_bar.btn_record.setIcon(qta.icon('fa5s.microphone', color='#d1d5db'))
 
     def take_screenshot(self):
         try:

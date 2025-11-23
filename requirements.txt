@@ -1,7 +1,8 @@
 PySide6
 google-generativeai
+python-dotenv
+Pillow
 sounddevice
 soundfile
 numpy
-Pillow
-python-dotenv
+qtawesome
