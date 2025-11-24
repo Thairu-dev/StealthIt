@@ -1187,7 +1187,10 @@ class MainWindow(QMainWindow):
         """)
         
         # --- Gemini Models ---
-        gemini_menu = menu.addMenu("Gemini")
+        gemini_menu = StealthMenu(menu)
+        gemini_menu.setTitle("Gemini")
+        menu.addMenu(gemini_menu)
+        
         gemini_menu.setIcon(qta.icon('fa5b.google', color='#d1d5db'))
         # Apply same style to submenu
         gemini_menu.setStyleSheet(menu.styleSheet())
@@ -1203,7 +1206,10 @@ class MainWindow(QMainWindow):
             action.triggered.connect(lambda checked, m=model: self.switch_model("gemini", m))
             
         # --- Ollama Models ---
-        ollama_menu = menu.addMenu("Ollama")
+        ollama_menu = StealthMenu(menu)
+        ollama_menu.setTitle("Ollama")
+        menu.addMenu(ollama_menu)
+        
         ollama_menu.setIcon(qta.icon('fa5s.server', color='#d1d5db'))
         ollama_menu.setStyleSheet(menu.styleSheet())
         
