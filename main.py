@@ -1082,25 +1082,33 @@ class MainWindow(QMainWindow):
         self.model_chip_widget.mousePressEvent = lambda e: self.show_model_selector()
         
         self.toolbar_layout.addWidget(self.model_chip_widget)
+        # Prompt Mode Buttons
+        self.prompt_buttons_layout = QHBoxLayout()
+        self.prompt_buttons_layout.setSpacing(5)
+        self.toolbar_layout.addLayout(self.prompt_buttons_layout)
+        
+        self.refresh_prompt_buttons()
+        
         self.toolbar_layout.addStretch()
         
         # Send Button
-        # Initialized
         self.btn_send = QPushButton()
+        self.btn_send.setIcon(qta.icon('fa5s.paper-plane', color='#d1d5db'))
         self.btn_send.setIconSize(QSize(16, 16))
         self.btn_send.setFixedSize(32, 32)
         self.btn_send.setToolTip("Send")
         self.btn_send.clicked.connect(self.handle_input)
         self.btn_send.setStyleSheet("""
             QPushButton {
-                background-color: #2563eb;
+                background-color: rgba(255, 255, 255, 0.05);
                 border-radius: 16px;
-                color: white;
-                font-size: 14px;
-                padding-bottom: 2px;
+                color: #d1d5db;
+                border: 1px solid rgba(255, 255, 255, 0.1);
             }
             QPushButton:hover {
-                background-color: #1d4ed8;
+                background-color: rgba(37, 99, 235, 0.5); /* Blue tint on hover */
+                color: white;
+                border: 1px solid rgba(37, 99, 235, 0.8);
             }
         """)
         self.toolbar_layout.addWidget(self.btn_send)
@@ -1195,7 +1203,7 @@ class MainWindow(QMainWindow):
         # Apply same style to submenu
         gemini_menu.setStyleSheet(menu.styleSheet())
         
-        gemini_models = ["gemini-2.5-flash", "gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"]
+        gemini_models = ["gemini-1.5-flash", "gemini-1.5-pro"]
         current_gemini = config["providers"]["gemini"].get("model", "gemini-2.5-flash")
         
         for model in gemini_models:
@@ -1243,6 +1251,146 @@ class MainWindow(QMainWindow):
 
     def _update_menu_close_time(self):
         self.last_menu_close_time = time.time()
+
+    def refresh_prompt_buttons(self):
+        # Clear existing buttons
+        while self.prompt_buttons_layout.count():
+            item = self.prompt_buttons_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+        
+        # Add buttons for each mode
+        modes = config["prompts"]["modes"]
+        for mode_name in modes:
+            btn = QPushButton(mode_name)
+            btn.setCursor(Qt.PointingHandCursor)
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: rgba(255, 255, 255, 0.05);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border-radius: 12px;
+                    color: #9ca3af;
+                    padding: 4px 10px;
+                    font-size: 11px;
+                }
+                QPushButton:hover {
+                    background-color: rgba(255, 255, 255, 0.15);
+                    color: white;
+                }
+            """)
+            btn.clicked.connect(lambda checked, m=mode_name: self.activate_prompt_mode(m))
+            self.prompt_buttons_layout.addWidget(btn)
+            
+        # Add Custom Prompt Button
+        btn_add = QPushButton()
+        btn_add.setIcon(qta.icon('fa5s.plus', color='#9ca3af'))
+        btn_add.setIconSize(QSize(10, 10))
+        btn_add.setFixedSize(24, 24)
+        btn_add.setToolTip("Add Custom Prompt")
+        btn_add.setCursor(Qt.PointingHandCursor)
+        btn_add.setStyleSheet("""
+            QPushButton {
+                background-color: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 12px;
+            }
+            QPushButton:hover {
+                background-color: rgba(255, 255, 255, 0.15);
+            }
+        """)
+        btn_add.clicked.connect(self.add_custom_prompt)
+        self.prompt_buttons_layout.addWidget(btn_add)
+
+    def activate_prompt_mode(self, mode_name):
+        prompt_text = config["prompts"]["modes"].get(mode_name)
+        if prompt_text:
+            config["prompts"]["system"] = prompt_text
+            # Visual feedback (optional, maybe toast?)
+            print(f"Activated mode: {mode_name}")
+            
+            # Auto-send if there is input or just to confirm mode switch
+            # User requested: "querry off what the prompt represents is sent out automatically"
+            # We will trigger handle_input. If input is empty, handle_input usually does nothing.
+            # We might want to force a send if the user wants "auto send". 
+            # But sending empty input is useless. 
+            # If input is empty, we'll just set the mode. 
+            # If input has text, we send it.
+            if self.input_field.toPlainText().strip():
+                self.handle_input()
+            else:
+                # Maybe show a small overlay/toast saying "Mode: X Activated"
+                self.add_ai_message(f"**System**: Switched to *{mode_name}* mode.")
+
+    def add_custom_prompt(self):
+        # Custom Dialog for adding prompt
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Add Custom Prompt")
+        dialog.setFixedSize(400, 300)
+        
+        # Stealth
+        try:
+            hwnd = int(dialog.winId())
+            WDA_EXCLUDEFROMCAPTURE = 0x00000011
+            user32.SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE)
+        except Exception:
+            pass
+
+        dialog.setStyleSheet("""
+            QDialog {
+                background-color: #1a1a1a;
+                color: #e5e7eb;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+            }
+            QLabel {
+                color: #d1d5db;
+                font-size: 14px;
+                background: transparent;
+            }
+            QLineEdit, QTextEdit {
+                background-color: rgba(0, 0, 0, 0.3);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 6px;
+                color: #e5e7eb;
+                padding: 8px;
+            }
+            QPushButton {
+                background-color: rgba(255, 255, 255, 0.1);
+                color: #e5e7eb;
+                border-radius: 6px;
+                padding: 8px 16px;
+                border: 1px solid rgba(255, 255, 255, 0.05);
+            }
+            QPushButton:hover {
+                background-color: rgba(255, 255, 255, 0.2);
+                color: white;
+            }
+        """)
+        
+        layout = QVBoxLayout(dialog)
+        
+        layout.addWidget(QLabel("Prompt Name (e.g., 'Creative'):"))
+        name_input = QLineEdit()
+        layout.addWidget(name_input)
+        
+        layout.addWidget(QLabel("System Prompt:"))
+        prompt_input = QTextEdit()
+        layout.addWidget(prompt_input)
+        
+        buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+        
+        if dialog.exec() == QDialog.Accepted:
+            name = name_input.text().strip()
+            prompt = prompt_input.toPlainText().strip()
+            
+            if name and prompt:
+                config["prompts"]["modes"][name] = prompt
+                save_config()
+                self.refresh_prompt_buttons()
 
     def switch_model(self, provider, model_name):
         # Validation

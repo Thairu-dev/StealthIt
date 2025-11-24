@@ -10,12 +10,14 @@
     },
     "active_provider": "gemini",
     "prompts": {
-        "system": "You are a helpful AI assistant. Be concise.",
+        "system": "tetetetettegd",
         "vision": "Analyze this screenshot find the question and give an answer to the question ignore everything else, start by by indicting the correct answer .",
         "modes": {
-            "General": "You are a helpful AI assistant. Be concise.",
+            "General": "You are a helper help all you can",
             "Meeting": "You are a professional meeting summarizer and action item generator.",
-            "Coding": "You are an expert software engineer. Provide code solutions and debugging tips."
+            "Coding": "You are an expert software engineer. Provide code solutions and debugging tips.",
+            "Test": "test",
+            "Another test": "tetetetettegd"
         }
     }
 }
