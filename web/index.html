@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<!DOCTYPE html>
-<html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stealth Utility</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         /* Critical for transparency */
         html,
@@ -20,7 +21,7 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             user-select: none;
         }
 
@@ -127,30 +128,34 @@
 
         /* Messages */
         .message-user {
-            background: #2563eb;
-            /* Blue-600 */
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             color: white;
             align-self: flex-end;
-            border-radius: 12px 12px 2px 12px;
+            border-radius: 18px 18px 4px 18px;
             margin-left: 20%;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .message-ai {
-            background: rgba(255, 255, 255, 0.08);
-            color: #e5e7eb;
-            /* Gray-200 */
+            background: rgba(30, 30, 30, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: #f3f4f6;
             align-self: flex-start;
-            border-radius: 12px 12px 12px 2px;
+            border-radius: 18px 18px 18px 4px;
             margin-right: 10%;
             position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             group: true;
-            /* For hover effects */
         }
 
         .message-content {
-            padding: 8px 12px;
-            font-size: 13px;
-            line-height: 1.4;
+            padding: 10px 14px;
+            font-size: 14px;
+            line-height: 1.5;
+            font-weight: 400;
         }
 
         /* Copy Button */
@@ -401,7 +406,14 @@
 
             msgDiv.innerHTML = contentHtml;
             chatView.appendChild(msgDiv);
-            chatView.scrollTop = chatView.scrollHeight;
+
+            if (isAi) {
+                // Scroll to the start of the new AI message
+                msgDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                // Scroll to bottom for user messages
+                chatView.scrollTop = chatView.scrollHeight;
+            }
 
             // Force expand when a message is added
             updatePanelSize(true);
@@ -414,14 +426,17 @@
             if (show) {
                 const loader = document.createElement('div');
                 loader.id = 'loader';
-                loader.className = 'message-ai flex items-center gap-1 p-3 w-12 justify-center animate-slide-in';
+                // Ensure it looks like an AI message bubble
+                loader.className = 'message-ai flex items-center gap-1.5 p-4 w-fit self-start animate-slide-in';
+                loader.style.marginLeft = '0'; // Explicitly ensure left alignment if needed
                 loader.innerHTML = `
-                    <div class="loading-dot w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
-                    <div class="loading-dot w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
-                    <div class="loading-dot w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                    <div class="loading-dot w-2 h-2 bg-gray-400 rounded-full"></div>
+                    <div class="loading-dot w-2 h-2 bg-gray-400 rounded-full"></div>
+                    <div class="loading-dot w-2 h-2 bg-gray-400 rounded-full"></div>
                 `;
                 chatView.appendChild(loader);
-                chatView.scrollTop = chatView.scrollHeight;
+                // Scroll to show the loader
+                loader.scrollIntoView({ behavior: 'smooth', block: 'end' });
                 updatePanelSize();
             }
         }

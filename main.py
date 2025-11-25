@@ -695,7 +695,7 @@ class SettingsDialog(QDialog):
 class LoadingDots(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedHeight(30)
+        self.setFixedHeight(40)
         self.dots = [0, 0, 0]
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_dots)
@@ -721,15 +721,23 @@ class LoadingDots(QWidget):
         if not self.running: return
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
+        
+        # Draw Bubble Background
+        painter.setBrush(QColor(30, 30, 30, 180)) # Semi-transparent dark
+        painter.setPen(QPen(QColor(255, 255, 255, 20), 1))
+        rect = QRect(0, 0, 60, 36)
+        painter.drawRoundedRect(rect, 18, 18)
+        
+        # Draw Dots
         painter.setBrush(QColor(200, 200, 200))
         painter.setPen(Qt.NoPen)
 
         for i in range(3):
-            y_offset = -4 if ((self.step + i) % 4) == 0 else 0
-            # Center the dots
-            x = self.width() // 2 - 20 + i * 15
-            y = self.height() // 2 + y_offset
-            painter.drawEllipse(x, y, 6, 6)
+            y_offset = -2 if ((self.step + i) % 4) == 0 else 0
+            # Center the dots in the bubble
+            x = 18 + i * 12
+            y = 18 + y_offset
+            painter.drawEllipse(x, y, 4, 4)
 
 class ControlBar(QFrame):
     def __init__(self, parent):
@@ -831,7 +839,7 @@ class ChatBubble(QWidget):
         self.is_user = is_user
         
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(0, 5, 0, 5)
         layout.setSpacing(5)
         
         # Text Label
@@ -841,25 +849,50 @@ class ChatBubble(QWidget):
         if not is_user:
             self.label.setTextFormat(Qt.MarkdownText) # Enable Markdown for AI responses
         
-        bg_color = "#2563eb" if is_user else "transparent"
-        radius = "8px 8px 2px 8px" if is_user else "8px 8px 8px 2px"
+        # Modern Styling
+        if is_user:
+            # Gradient for User
+            style = """
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #3b82f6, stop:1 #2563eb);
+                color: white;
+                padding: 10px 14px;
+                border-radius: 18px;
+                border-bottom-right-radius: 4px;
+                font-family: 'Segoe UI', sans-serif;
+                font-size: 14px;
+                font-weight: 400;
+            """
+        else:
+            # Glassmorphism for AI
+            style = """
+                background-color: rgba(30, 30, 30, 0.7);
+                color: #f3f4f6;
+                padding: 10px 14px;
+                border-radius: 18px;
+                border-bottom-left-radius: 4px;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                font-family: 'Segoe UI', sans-serif;
+                font-size: 14px;
+                font-weight: 400;
+            """
         
         self.label.setStyleSheet(f"""
-            background-color: {bg_color};
-            color: #e5e7eb;
-            padding: 8px 12px;
-            border-radius: {radius};
-            font-size: 13px;
+            QLabel {{
+                {style}
+            }}
         """)
-        self.label.setSizePolicy(QSizePolicy.Maximum if is_user else QSizePolicy.Expanding, QSizePolicy.Minimum)
+        
+        self.label.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
         if is_user:
             self.label.setMaximumWidth(350)
+            self.label.setMinimumWidth(50) 
         else:
-            self.label.setWordWrap(True) # Ensure it still wraps
+            self.label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+            self.label.setWordWrap(True)
         
-        # Copy Button (Only for AI or if desired for User too, but usually AI)
+        # Copy Button (Only for AI)
         self.btn_copy = QPushButton()
-        self.btn_copy.setIcon(qta.icon('fa5s.copy', color='#6b7280'))
+        self.btn_copy.setIcon(qta.icon('fa5s.copy', color='#9ca3af'))
         self.btn_copy.setIconSize(QSize(14, 14))
         self.btn_copy.setFixedSize(24, 24)
         self.btn_copy.setToolTip("Copy to Clipboard")
@@ -868,8 +901,7 @@ class ChatBubble(QWidget):
             QPushButton {
                 background-color: transparent;
                 border: none;
-                color: #6b7280;
-                font-size: 14px;
+                color: #9ca3af;
             }
             QPushButton:hover {
                 color: white;
@@ -881,14 +913,14 @@ class ChatBubble(QWidget):
             layout.addWidget(self.label)
         else:
             layout.addWidget(self.label)
-            layout.addWidget(self.btn_copy)
-            # layout.addStretch() # Removed stretch to allow full width
+            layout.addWidget(self.btn_copy, 0, Qt.AlignTop)
+            # layout.addStretch()
 
     def copy_to_clipboard(self):
         clipboard = QApplication.clipboard()
         clipboard.setText(self.text)
         self.btn_copy.setIcon(qta.icon('fa5s.check', color='#10b981'))
-        QTimer.singleShot(2000, lambda: self.btn_copy.setIcon(qta.icon('fa5s.copy', color='#6b7280')))
+        QTimer.singleShot(2000, lambda: self.btn_copy.setIcon(qta.icon('fa5s.copy', color='#9ca3af')))
 
 class TranscriptionItem(QWidget):
     def __init__(self, text):
@@ -1042,9 +1074,8 @@ class MainWindow(QMainWindow):
         self.scroll_area.setWidget(self.scroll_content)
         self.chat_layout.addWidget(self.scroll_area)
         
-        # Loading Animation (in Chat Tab)
-        self.loading_dots = LoadingDots(self)
-        self.chat_layout.addWidget(self.loading_dots)
+        # Loading Animation (Dynamic, not added initially)
+        self.loading_dots = None
         
         self.tabs.addTab(self.tab_chat, "Chat")
 
@@ -1668,7 +1699,18 @@ class MainWindow(QMainWindow):
         self.expand_window()
         self.add_user_message(text)
         self.input_field.clear()
+        
+        # Add loading dots to end (Create new instance)
+        if self.loading_dots:
+            self.loading_dots.stop()
+            self.loading_dots.deleteLater()
+            
+        self.loading_dots = LoadingDots(self.scroll_content)
+        self.scroll_layout.addWidget(self.loading_dots)
         self.loading_dots.start()
+        
+        # Scroll to bottom after layout update
+        QTimer.singleShot(10, self.scroll_to_bottom)
         
         self.ai_worker.queue.put({
             'action': 'chat',
@@ -1681,10 +1723,31 @@ class MainWindow(QMainWindow):
         self.scroll_to_bottom()
 
     def add_ai_message(self, text):
+        print(f"DEBUG: add_ai_message called with text len={len(text)}")
         self.expand_window()
-        self.loading_dots.stop()
+        
+        if self.loading_dots:
+            print("DEBUG: Stopping loading dots")
+            self.loading_dots.stop()
+            self.loading_dots.deleteLater()
+            self.loading_dots = None
         
         bubble = ChatBubble(text, is_user=False)
+        self.scroll_layout.addWidget(bubble)
+        
+        # Scroll to the top of the new bubble
+        # We use a slight delay to ensure layout has updated
+        QTimer.singleShot(10, lambda: self.scroll_to_widget(bubble))
+
+    def scroll_to_widget(self, widget):
+        # Scroll such that the widget is at the top (or visible)
+        # ensureWidgetVisible ensures it's visible. To force top, we might need manual calculation.
+        # But ensureWidgetVisible is usually good enough if the widget is large.
+        # If we want to strictly scroll to top:
+        self.scroll_area.verticalScrollBar().setValue(widget.y())
+
+    def add_user_message(self, text):
+        bubble = ChatBubble(text, is_user=True)
         self.scroll_layout.addWidget(bubble)
         self.scroll_to_bottom()
 
@@ -1740,7 +1803,17 @@ class MainWindow(QMainWindow):
             self.expand_window()
             self.tabs.setCurrentIndex(0) # Switch to Chat tab
             self.add_user_message("📸 Screenshot taken. Analyzing...")
+            
+            # Add loading dots (Fix for NoneType error)
+            if self.loading_dots:
+                self.loading_dots.stop()
+                self.loading_dots.deleteLater()
+                
+            self.loading_dots = LoadingDots(self.scroll_content)
+            self.scroll_layout.addWidget(self.loading_dots)
             self.loading_dots.start()
+            QTimer.singleShot(10, self.scroll_to_bottom)
+            
             self.ai_worker.queue.put({
                 'action': 'chat',
                 'text': "Analyze this screenshot.",
@@ -1748,7 +1821,8 @@ class MainWindow(QMainWindow):
             })
         except Exception as e:
             print(f"Screenshot Error: {e}")
-            self.loading_dots.stop()
+            if self.loading_dots:
+                self.loading_dots.stop()
 
     def open_settings(self):
         dialog = SettingsDialog(self)
