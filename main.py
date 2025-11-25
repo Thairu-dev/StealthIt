@@ -168,10 +168,22 @@ class AIWorker(QThread):
                 except Exception as e:
                     print(f"Error loading image: {e}")
 
+            # Set a global timeout for this thread's socket operations (best effort for genai)
+            import socket
+            socket.setdefaulttimeout(30)
+            
             response = model.generate_content(content)
             self.response_ready.emit(response.text)
         except Exception as e:
-            self.response_ready.emit(f"Gemini Error: {str(e)}")
+            err_msg = str(e)
+            if "User location is not supported" in err_msg:
+                self.response_ready.emit("Error: Region not supported. Use a VPN or different API key.")
+            elif "401" in err_msg or "API key" in err_msg:
+                self.response_ready.emit("Error: Invalid API Key. Check settings.")
+            elif "timed out" in err_msg.lower():
+                self.response_ready.emit("Error: Request timed out. Check connection.")
+            else:
+                self.response_ready.emit(f"Error: {err_msg}")
 
     def chat_ollama(self, user_input, audio_context, image_input):
         host = config["providers"]["ollama"].get("host", "http://localhost:11434")
@@ -203,7 +215,7 @@ class AIWorker(QThread):
             # if image_input: ...
             
             req = urllib.request.Request(url, data=json.dumps(data).encode('utf-8'), headers={'Content-Type': 'application/json'})
-            with urllib.request.urlopen(req) as response:
+            with urllib.request.urlopen(req, timeout=30) as response:
                 result = json.loads(response.read().decode('utf-8'))
                 self.response_ready.emit(result.get("response", ""))
         except Exception as e:
@@ -247,7 +259,7 @@ class AIWorker(QThread):
     def stop(self):
         self.running = False
         self.queue.put(None) # Unblock queue
-        self.wait()
+        self.wait(2000) # Wait max 2 seconds, then force quit (thread will die with app)
 
 class AudioWorker(QThread):
     recording_status = Signal(bool)
@@ -349,7 +361,7 @@ class AudioWorker(QThread):
     def stop(self):
         self.recording = False
         self.stop_recording()
-        self.wait()
+        self.wait(2000)
 
 
 # --- UI Components ---
@@ -876,16 +888,29 @@ class ChatBubble(QWidget):
                 font-weight: 400;
             """
         
+        # Error Styling
+        if text.startswith("Error:"):
+            style = """
+                background-color: rgba(220, 38, 38, 0.8);
+                color: white;
+                padding: 10px 14px;
+                border-radius: 18px;
+                border-bottom-left-radius: 4px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                font-family: 'Segoe UI', sans-serif;
+                font-size: 14px;
+            """
+        
         self.label.setStyleSheet(f"""
             QLabel {{
                 {style}
             }}
         """)
         
-        self.label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
         if is_user:
+            self.label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
             self.label.setMaximumWidth(350)
-            self.label.setMinimumWidth(0) # Let it shrink if needed, but Preferred policy will try to fit text
+            self.label.setMinimumWidth(0)
         else:
             self.label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
             self.label.setWordWrap(True)
@@ -1067,6 +1092,7 @@ class MainWindow(QMainWindow):
         
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.scroll_area.setStyleSheet("background: transparent; border: none;")
         self.scroll_content = QWidget()
         self.scroll_layout = QVBoxLayout(self.scroll_content)
@@ -1091,6 +1117,7 @@ class MainWindow(QMainWindow):
         # Use ScrollArea for Transcription too
         self.trans_scroll_area = QScrollArea()
         self.trans_scroll_area.setWidgetResizable(True)
+        self.trans_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.trans_scroll_area.setStyleSheet("background: transparent; border: none;")
         self.trans_scroll_content = QWidget()
         self.trans_scroll_layout = QVBoxLayout(self.trans_scroll_content)
@@ -1724,11 +1751,6 @@ class MainWindow(QMainWindow):
             'action': 'chat',
             'text': text
         })
-
-    def add_user_message(self, text):
-        bubble = ChatBubble(text, is_user=True)
-        self.scroll_layout.addWidget(bubble)
-        self.scroll_to_bottom()
 
     def add_ai_message(self, text):
         print(f"DEBUG: add_ai_message called with text len={len(text)}")
