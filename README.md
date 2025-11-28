@@ -79,7 +79,7 @@ To use the AI features, you'll need a Google Gemini API key.
 | **Ctrl + R** | **Record Audio**: Toggles microphone recording for voice queries. |
 | **Ctrl + T** | **Toggle Chat**: Expands or collapses the chat window. |
 | **Ctrl + W** | **Close App**: Completely terminates the application. |
-| **Ctrl + \** | **Hide/Show**: Instantly hides or shows the entire application window. |
+| ** Ctrl + \ ** | **Hide/Show**: Instantly hides or shows the entire application window. |
 | **Ctrl + ,** | **Settings**: Opens the configuration dialog. |
 
 ## 🤝 Contributing
