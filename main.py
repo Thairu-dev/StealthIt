@@ -186,7 +186,12 @@ class AIWorker(QThread):
                 self.response_ready.emit(f"Error: {err_msg}")
 
     def chat_ollama(self, user_input, audio_context, image_input):
-        host = config["providers"]["ollama"].get("host", "http://localhost:11434")
+        # Robust Host Normalization: Strip common API suffixes and trailing slashes
+        host = config["providers"]["ollama"].get("host", "http://localhost:11434").strip().rstrip('/')
+        for suffix in ["/api/generate", "/api/tags", "/api/chat"]:
+            if host.endswith(suffix):
+                host = host[:-len(suffix)]
+        
         model_name = config["providers"]["ollama"].get("model", "llama3")
         
         # Select Prompt
@@ -215,9 +220,18 @@ class AIWorker(QThread):
             # if image_input: ...
             
             req = urllib.request.Request(url, data=json.dumps(data).encode('utf-8'), headers={'Content-Type': 'application/json'})
-            with urllib.request.urlopen(req, timeout=30) as response:
+            # Increased timeout to 120s for model loading
+            with urllib.request.urlopen(req, timeout=120) as response:
                 result = json.loads(response.read().decode('utf-8'))
                 self.response_ready.emit(result.get("response", ""))
+        except urllib.error.HTTPError as e:
+            try:
+                error_body = e.read().decode('utf-8')
+                error_json = json.loads(error_body)
+                error_msg = error_json.get('error', str(e))
+                self.response_ready.emit(f"Ollama Error: {error_msg}")
+            except Exception:
+                self.response_ready.emit(f"Ollama Error: HTTP {e.code} {e.reason}")
         except Exception as e:
             self.response_ready.emit(f"Ollama Error: {str(e)}. Is Ollama running?")
 
@@ -655,7 +669,11 @@ class SettingsDialog(QDialog):
             save_config()
 
     def fetch_ollama_models(self):
-        host = self.ollama_host_input.text().strip()
+        host = self.ollama_host_input.text().strip().rstrip('/')
+        for suffix in ["/api/generate", "/api/tags", "/api/chat"]:
+            if host.endswith(suffix):
+                host = host[:-len(suffix)]
+                
         try:
             url = f"{host}/api/tags"
             with urllib.request.urlopen(url, timeout=2) as response:

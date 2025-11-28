@@ -5,10 +5,13 @@
         },
         "ollama": {
             "host": "http://localhost:11434",
-            "model": "llama3"
+            "model": "llama3:latest",
+            "cached_models": [
+                "llama3:latest"
+            ]
         }
     },
-    "active_provider": "gemini",
+    "active_provider": "ollama",
     "prompts": {
         "system": "Offer all the help you  can",
         "vision": "Analyze this screenshot find the question and give an answer to the question ignore everything else, start by by indicting the correct answer .",
