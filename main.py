@@ -7,6 +7,7 @@ import queue
 import ctypes
 from ctypes import wintypes
 import io
+import base64
 import numpy as np
 import sounddevice as sd
 import soundfile as sf
@@ -185,6 +186,7 @@ class AIWorker(QThread):
             else:
                 self.response_ready.emit(f"Error: {err_msg}")
 
+
     def chat_ollama(self, user_input, audio_context, image_input):
         # Robust Host Normalization: Strip common API suffixes and trailing slashes
         host = config["providers"]["ollama"].get("host", "http://localhost:11434").strip().rstrip('/')
@@ -200,8 +202,6 @@ class AIWorker(QThread):
             # Ollama vision support varies (llava etc), but for now we'll append text
             vision_prompt = config["prompts"].get("vision", "")
             full_prompt = f"{vision_prompt}\n\nUser: {user_input}"
-            # Note: Image handling for Ollama requires base64 encoding and specific models (llava)
-            # For this step, we will just handle text or warn about images if model isn't multimodal
         else:
             full_prompt = f"{system_prompt}\n\nUser: {user_input}"
 
@@ -216,9 +216,25 @@ class AIWorker(QThread):
                 "stream": False
             }
             
-            # If image, we need to encode it (TODO for later if requested, sticking to text for now or basic)
-            # if image_input: ...
-            
+            # Handle Image Input
+            if image_input:
+                try:
+                    buffered = io.BytesIO()
+                    if isinstance(image_input, str):
+                        # If it's a path
+                        with open(image_input, "rb") as img_file:
+                            b64_data = base64.b64encode(img_file.read()).decode('utf-8')
+                    else:
+                        # If it's a PIL Image
+                        image_input.save(buffered, format="PNG")
+                        b64_data = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                    
+                    data["images"] = [b64_data]
+                except Exception as e:
+                    print(f"Error encoding image for Ollama: {e}")
+                    self.response_ready.emit(f"Error processing image: {str(e)}")
+                    return
+
             req = urllib.request.Request(url, data=json.dumps(data).encode('utf-8'), headers={'Content-Type': 'application/json'})
             # Increased timeout to 120s for model loading
             with urllib.request.urlopen(req, timeout=120) as response:
