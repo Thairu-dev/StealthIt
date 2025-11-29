@@ -24,9 +24,11 @@ load_dotenv()
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                                QHBoxLayout, QTextEdit, QLineEdit, QPushButton, 
                                QLabel, QFrame, QSizePolicy, QScrollArea, QGraphicsDropShadowEffect,
-                               QDialog, QFormLayout, QDialogButtonBox, QTabWidget, QComboBox, QMenu, QMessageBox, QScroller)
+                               QDialog, QFormLayout, QDialogButtonBox, QTabWidget, QComboBox, QMenu, QMessageBox, QScroller, QTextBrowser)
 from PySide6.QtCore import Qt, QThread, Signal, QPoint, QSize, QTimer, QPropertyAnimation, QEasingCurve, QRect
-from PySide6.QtGui import QColor, QPalette, QIcon, QFont, QCursor, QPainter, QBrush, QPen, QClipboard, QShortcut, QKeySequence
+from PySide6.QtGui import QColor, QPalette, QIcon, QFont, QCursor, QPainter, QBrush, QPen, QClipboard, QShortcut, QKeySequence, QDesktopServices
+
+import markdown
 
 # --- Configuration ---
 CONFIG_FILE = "config.json"
@@ -878,6 +880,33 @@ class ControlBar(QFrame):
             self.parent.move(self.parent.pos() + delta)
             self.parent.old_pos = event.globalPosition().toPoint()
 
+class AutoResizingTextBrowser(QTextBrowser):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFrameShape(QFrame.NoFrame)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setOpenExternalLinks(True)
+        self.textChanged.connect(self.adjust_height)
+        
+    def adjust_height(self):
+        doc = self.document()
+        # Ensure we use the current width to calculate height
+        doc.setTextWidth(self.width())
+        doc_height = doc.size().height()
+        self.setFixedHeight(int(doc_height + 20))
+        
+    def sizeHint(self):
+        # Calculate ideal width (unwrapped)
+        doc = self.document().clone()
+        doc.setTextWidth(-1)
+        ideal_width = doc.idealWidth() + 30
+        return QSize(int(ideal_width), int(doc.size().height() + 20))
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.adjust_height()
+
 class ChatBubble(QWidget):
     def __init__(self, text, is_user=False):
         super().__init__()
@@ -888,67 +917,77 @@ class ChatBubble(QWidget):
         layout.setContentsMargins(0, 5, 0, 5)
         layout.setSpacing(5)
         
-        # Text Label
-        self.label = QLabel(text)
-        self.label.setWordWrap(True)
-        self.label.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        if not is_user:
-            self.label.setTextFormat(Qt.MarkdownText) # Enable Markdown for AI responses
-        
         # Modern Styling
         if is_user:
-            # Gradient for User
-            style = """
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #3b82f6, stop:1 #2563eb);
-                color: white;
-                padding: 10px 14px;
-                border-radius: 18px;
-                border-bottom-right-radius: 4px;
-                font-family: 'Segoe UI', sans-serif;
-                font-size: 14px;
-                font-weight: 400;
-            """
+            # Subtle Blue for User (Stealthy)
+            bg_style = "background-color: rgba(37, 99, 235, 0.3);"
+            text_color = "#e5e7eb" # Light gray/white
+            border_radius = "18px"
+            border_bottom_right = "4px"
+            border = "1px solid rgba(37, 99, 235, 0.4)"
         else:
             # Glassmorphism for AI
-            style = """
-                background-color: rgba(30, 30, 30, 0.7);
-                color: #f3f4f6;
-                padding: 10px 14px;
-                border-radius: 18px;
-                border-bottom-left-radius: 4px;
-                border: 1px solid rgba(255, 255, 255, 0.08);
-                font-family: 'Segoe UI', sans-serif;
-                font-size: 14px;
-                font-weight: 400;
-            """
+            bg_style = "background-color: rgba(30, 30, 30, 0.7);"
+            text_color = "#f3f4f6"
+            border_radius = "18px"
+            border_bottom_right = "18px" # Normal
+            border = "1px solid rgba(255, 255, 255, 0.08)"
         
         # Error Styling
-        if text.startswith("Error:"):
-            style = """
-                background-color: rgba(220, 38, 38, 0.8);
-                color: white;
-                padding: 10px 14px;
-                border-radius: 18px;
-                border-bottom-left-radius: 4px;
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                font-family: 'Segoe UI', sans-serif;
-                font-size: 14px;
-            """
+        if text.startswith("Error:") or text.startswith("Ollama Error:"):
+            bg_style = "background-color: rgba(220, 38, 38, 0.8);"
+            text_color = "white"
+
+        # Text Browser for Markdown
+        self.text_browser = AutoResizingTextBrowser()
         
-        self.label.setStyleSheet(f"""
-            QLabel {{
-                {style}
+        # Convert Markdown to HTML
+        if not is_user:
+            try:
+                html = markdown.markdown(text, extensions=['fenced_code', 'tables', 'nl2br'])
+                # Add some basic CSS for tables and code
+                css = """
+                <style>
+                    body { font-family: 'Segoe UI', sans-serif; font-size: 14px; color: """ + text_color + """; margin: 0; padding: 0; }
+                    code { background-color: rgba(255, 255, 255, 0.1); padding: 2px 4px; border-radius: 4px; font-family: 'Consolas', monospace; }
+                    pre { background-color: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 6px; color: #d1d5db; margin: 5px 0; }
+                    table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+                    th, td { border: 1px solid rgba(255, 255, 255, 0.2); padding: 6px; text-align: left; }
+                    th { background-color: rgba(255, 255, 255, 0.1); font-weight: bold; }
+                    a { color: #60a5fa; text-decoration: none; }
+                    p { margin: 5px 0; }
+                </style>
+                """
+                self.text_browser.setHtml(css + html)
+            except Exception as e:
+                print(f"Markdown Error: {e}")
+                self.text_browser.setPlainText(text)
+        else:
+            self.text_browser.setPlainText(text)
+            
+        # Styling the Widget itself
+        self.text_browser.setStyleSheet(f"""
+            QTextBrowser {{
+                {bg_style}
+                color: {text_color};
+                border-radius: {border_radius};
+                border-bottom-right-radius: {border_bottom_right if is_user else '18px'};
+                border-bottom-left-radius: {'4px' if not is_user else '18px'};
+                border: {border};
+                padding: 10px 14px;
             }}
         """)
-        
+
+        # Adjust Size Policy
         if is_user:
-            self.label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
-            self.label.setMaximumWidth(350)
-            self.label.setMinimumWidth(0)
+            self.text_browser.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+            self.text_browser.setMaximumWidth(350)
         else:
-            self.label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-            self.label.setWordWrap(True)
-        
+            self.text_browser.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+
+        # Initial Height Adjustment
+        self.text_browser.adjust_height()
+
         # Copy Button (Only for AI)
         self.btn_copy = QPushButton()
         self.btn_copy.setIcon(qta.icon('fa5s.copy', color='#9ca3af'))
@@ -969,11 +1008,10 @@ class ChatBubble(QWidget):
         
         if is_user:
             layout.addStretch()
-            layout.addWidget(self.label)
+            layout.addWidget(self.text_browser)
         else:
-            layout.addWidget(self.label)
+            layout.addWidget(self.text_browser)
             layout.addWidget(self.btn_copy, 0, Qt.AlignTop)
-            # layout.addStretch()
 
     def copy_to_clipboard(self):
         clipboard = QApplication.clipboard()

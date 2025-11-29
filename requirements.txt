@@ -6,3 +6,4 @@ sounddevice
 soundfile
 numpy
 qtawesome
+markdown
