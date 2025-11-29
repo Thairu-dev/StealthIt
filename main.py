@@ -888,20 +888,26 @@ class AutoResizingTextBrowser(QTextBrowser):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setOpenExternalLinks(True)
         self.textChanged.connect(self.adjust_height)
+        # Remove default margins
+        self.setContentsMargins(0, 0, 0, 0)
+        self.document().setDocumentMargin(0)
         
     def adjust_height(self):
         doc = self.document()
         # Ensure we use the current width to calculate height
         doc.setTextWidth(self.width())
         doc_height = doc.size().height()
-        self.setFixedHeight(int(doc_height + 20))
+        # Reduced buffer from 20 to 5
+        self.setFixedHeight(int(doc_height + 5))
         
     def sizeHint(self):
         # Calculate ideal width (unwrapped)
         doc = self.document().clone()
         doc.setTextWidth(-1)
-        ideal_width = doc.idealWidth() + 30
-        return QSize(int(ideal_width), int(doc.size().height() + 20))
+        # Reduced buffer from 30 to 10 to minimize right-side gap
+        ideal_width = doc.idealWidth() + 10
+        # Reduced buffer from 20 to 5
+        return QSize(int(ideal_width), int(doc.size().height() + 5))
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -938,8 +944,17 @@ class ChatBubble(QWidget):
             bg_style = "background-color: rgba(220, 38, 38, 0.8);"
             text_color = "white"
 
+        # Bubble Container (Frame)
+        self.bubble_frame = QFrame()
+        self.bubble_frame.setObjectName("BubbleFrame")
+        bubble_layout = QVBoxLayout(self.bubble_frame)
+        # Tighter padding
+        bubble_layout.setContentsMargins(14, 8, 14, 8) 
+        bubble_layout.setSpacing(0)
+
         # Text Browser for Markdown
         self.text_browser = AutoResizingTextBrowser()
+        bubble_layout.addWidget(self.text_browser)
         
         # Convert Markdown to HTML
         if not is_user:
@@ -965,24 +980,35 @@ class ChatBubble(QWidget):
         else:
             self.text_browser.setPlainText(text)
             
-        # Styling the Widget itself
-        self.text_browser.setStyleSheet(f"""
-            QTextBrowser {{
+        # Styling the Bubble Frame (Container)
+        self.bubble_frame.setStyleSheet(f"""
+            QFrame#BubbleFrame {{
                 {bg_style}
-                color: {text_color};
                 border-radius: {border_radius};
                 border-bottom-right-radius: {border_bottom_right if is_user else '18px'};
                 border-bottom-left-radius: {'4px' if not is_user else '18px'};
                 border: {border};
-                padding: 10px 14px;
+            }}
+        """)
+        
+        # Styling the Text Browser (Transparent)
+        self.text_browser.setStyleSheet(f"""
+            QTextBrowser {{
+                background-color: transparent;
+                border: none;
+                color: {text_color};
+                margin: 0px;
+                padding: 0px;
             }}
         """)
 
         # Adjust Size Policy
         if is_user:
-            self.text_browser.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
-            self.text_browser.setMaximumWidth(350)
+            self.bubble_frame.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+            self.bubble_frame.setMaximumWidth(350)
+            self.text_browser.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         else:
+            self.bubble_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
             self.text_browser.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         # Initial Height Adjustment
@@ -1008,9 +1034,9 @@ class ChatBubble(QWidget):
         
         if is_user:
             layout.addStretch()
-            layout.addWidget(self.text_browser)
+            layout.addWidget(self.bubble_frame)
         else:
-            layout.addWidget(self.text_browser)
+            layout.addWidget(self.bubble_frame)
             layout.addWidget(self.btn_copy, 0, Qt.AlignTop)
 
     def copy_to_clipboard(self):
