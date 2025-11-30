@@ -266,24 +266,27 @@ class AIWorker(QThread):
             
             audio_file = genai.upload_file(path=audio_path)
             response = model.generate_content([
-                "Transcribe this audio file accurately.",
+                "Transcribe this audio file accurately. Return only the transcribed text with no extra commentary.",
                 audio_file
             ])
-            model = genai.GenerativeModel("gemini-2.5-flash")
             
-            response = model.generate_content([
-                "Transcribe the following audio fragment. Return only the text, no preamble.",
-                {'mime_type': 'audio/wav', 'data': audio_bytes}
-            ])
-            
-            # Safely check for text
-            if response.parts:
-                text = response.text.strip()
+            # Safely extract text from response
+            text = None
+            try:
+                text = getattr(response, "text", None)
+                if not text and getattr(response, "parts", None):
+                    # Some SDKs return parts; try to collect text from parts
+                    parts = []
+                    for p in response.parts:
+                        if isinstance(p, dict):
+                            parts.append(p.get("text", ""))
+                        else:
+                            parts.append(getattr(p, "text", ""))
+                    text = " ".join([p for p in parts if p]).strip()
                 if text:
-                    self.transcription_ready.emit(text)
-            else:
-                # print("Empty response from AI (Silence?)")
-                pass
+                    self.transcription_ready.emit(text.strip())
+            except Exception as e:
+                print(f"Transcription parse error: {e}")
                 
         except Exception as e:
             print(f"Chunk Transcription Error: {e}")
