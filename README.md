@@ -6,6 +6,20 @@
 
 ---
 
+## 🤖 Supported AI Providers
+
+StealthIt supports **5 AI providers** for maximum flexibility:
+
+| Provider | Vision Support | Notes |
+| :--- | :---: | :--- |
+| **Google Gemini** | ✅ | Cloud API, excellent vision capabilities |
+| **Ollama** | ✅ | Local LLMs, requires vision models like `llava` |
+| **OpenAI** | ✅ | GPT-4o, GPT-4 Turbo, o1 models |
+| **Anthropic** | ✅ | Claude 4, Claude 3.5 Sonnet/Haiku/Opus |
+| **Cerebras** | ❌ | Blazing-fast inference, Llama models |
+
+---
+
 ## 🚀 Ollama Support
 **StealthIt** now fully supports local LLMs via **Ollama**, including vision capabilities!
 
@@ -29,12 +43,13 @@ To use the **Capture & Analyze** feature (`Ctrl+Enter`) with Ollama, you **MUST*
 ## ✨ Features
 
 *   **👻 True Stealth Mode**: The application is hidden from the Windows Taskbar and is invisible to screen capture tools (OBS, Discord, Teams, etc.) thanks to advanced window affinity settings.
-*   **🧠 AI Integration**: Powered by **Google Gemini** or local **Ollama** models.
+*   **🧠 Multi-Provider AI**: Powered by **Google Gemini**, **OpenAI**, **Anthropic Claude**, **Cerebras**, or local **Ollama** models.
 *   **📸 Instant Vision**: Press `Ctrl+Enter` to instantly capture a screenshot and analyze it with AI.
 *   **🎤 Voice Interaction**: Press `Ctrl+R` to record audio and get instant transcriptions and AI responses.
 *   **⌨️ Global Hotkeys**: Control the application from anywhere without losing focus.
 *   **🎨 Modern UI**: A sleek, dark, semi-transparent interface that floats unobtrusively on your desktop.
 *   **📝 Markdown Support**: Rich text formatting for AI responses (bold, italics, lists, etc.).
+*   **⚡ Quick Model Switching**: Click the model chip to instantly switch between providers and models.
 
 ## 🛠️ Installation
 
@@ -55,21 +70,30 @@ To use the **Capture & Analyze** feature (`Ctrl+Enter`) with Ollama, you **MUST*
     python main.py
     ```
 
-## 🔑 Getting a Gemini API Key
+## 🔑 API Keys
 
-To use the AI features, you'll need a Google Gemini API key.
+Get API keys from your preferred providers:
 
-1.  Go to [Google AI Studio](https://aistudio.google.com/app/apikey).
-2.  Click on **Create API key**.
-3.  Copy the generated key.
-4.  Paste it into the **Settings** menu in StealthIt.
+| Provider | Get API Key |
+| :--- | :--- |
+| **Google Gemini** | [Google AI Studio](https://aistudio.google.com/app/apikey) |
+| **OpenAI** | [OpenAI Platform](https://platform.openai.com/api-keys) |
+| **Anthropic** | [Anthropic Console](https://console.anthropic.com/) |
+| **Cerebras** | [Cerebras Cloud](https://cloud.cerebras.ai/) |
+| **Ollama** | No API key needed (runs locally) |
 
 ## ⚙️ Configuration
 
 1.  Open the **Settings** menu by clicking the ⚙️ icon or pressing `Ctrl+,`.
-2.  **Gemini**: Enter your Google Gemini API Key.
-3.  **Ollama**: Configure your Ollama host URL (default: `http://localhost:11434`).
-    *   **Note**: The app automatically handles URL formatting, so `http://localhost:11434` and `http://localhost:11434/api/generate` both work.
+2.  Select your **Active Provider** from the dropdown.
+3.  Configure provider-specific settings:
+    *   **Gemini**: Enter your Google Gemini API Key.
+    *   **OpenAI**: Enter your OpenAI API Key, select model (GPT-4o, GPT-4 Turbo, etc.).
+    *   **Anthropic**: Enter your Anthropic API Key, select model (Claude 4, Claude 3.5, etc.).
+    *   **Cerebras**: Enter your Cerebras API Key, select model (Llama 4 Scout, Llama 3.1, etc.).
+    *   **Ollama**: Configure your Ollama host URL (default: `http://localhost:11434`).
+
+> **Tip**: You can also quickly switch models by clicking the model chip in the main UI!
 
 ## 🎮 Usage & Hotkeys
 

@@ -42,6 +42,18 @@ config = {
         "ollama": {
             "host": "http://localhost:11434",
             "model": "llama3"
+        },
+        "anthropic": {
+            "api_key": "",
+            "model": "claude-sonnet-4-20250514"
+        },
+        "openai": {
+            "api_key": "",
+            "model": "gpt-4o"
+        },
+        "cerebras": {
+            "api_key": "",
+            "model": "llama-4-scout-17b-16e-instruct"
         }
     },
     "active_provider": "gemini",
@@ -55,6 +67,7 @@ config = {
         }
     }
 }
+
 
 def load_config():
     global config
@@ -94,7 +107,11 @@ VK_OEM_5 = 0xDC  # Backslash
 VK_UP = 0x26
 VK_DOWN = 0x28
 VK_LEFT = 0x25
+VK_LEFT = 0x25
 VK_RIGHT = 0x27
+
+# --- Constants ---
+KNOWN_VISION_MODELS = ["llava", "moondream", "llama3.2-vision", "minicpm-v", "yi-vl", "lava"]
 
 # --- AI & Audio Logic (Background Threads) ---
 
@@ -134,6 +151,12 @@ class AIWorker(QThread):
             self.chat_gemini(user_input, audio_context, image_input)
         elif provider == "ollama":
             self.chat_ollama(user_input, audio_context, image_input)
+        elif provider == "anthropic":
+            self.chat_anthropic(user_input, audio_context, image_input)
+        elif provider == "openai":
+            self.chat_openai(user_input, audio_context, image_input)
+        elif provider == "cerebras":
+            self.chat_cerebras(user_input, audio_context, image_input)
         else:
             self.response_ready.emit(f"Error: Unknown provider {provider}")
 
@@ -198,6 +221,13 @@ class AIWorker(QThread):
         
         model_name = config["providers"]["ollama"].get("model", "llama3")
         
+        # Validation for Vision
+        if image_input:
+            is_vision_model = any(vm in model_name.lower() for vm in KNOWN_VISION_MODELS)
+            if not is_vision_model:
+                 self.response_ready.emit(f"**System Warning**: The model '{model_name}' likely does not support ownership of images. Please switch to a vision-capable model like `llava` (run `ollama pull llava` in terminal) to have the AI see this screenshot.\n\n")
+                 # We still proceed, as some custom models might work or the user might just want the text prompt sent.
+                 # But usually, Ollama just ignores the image if the model doesn't support it, so proceeding is fine.
         # Select Prompt
         system_prompt = config["prompts"]["system"]
         if image_input:
@@ -252,6 +282,202 @@ class AIWorker(QThread):
                 self.response_ready.emit(f"Ollama Error: HTTP {e.code} {e.reason}")
         except Exception as e:
             self.response_ready.emit(f"Ollama Error: {str(e)}. Is Ollama running?")
+
+    def chat_anthropic(self, user_input, audio_context, image_input):
+        import anthropic
+        
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            self.response_ready.emit("Error: Anthropic API Key missing. Check settings.")
+            return
+
+        try:
+            client = anthropic.Anthropic(api_key=api_key)
+            model_name = config["providers"]["anthropic"].get("model", "claude-sonnet-4-20250514")
+            
+            # Select Prompt
+            system_prompt = config["prompts"]["system"]
+            if image_input:
+                vision_prompt = config["prompts"].get("vision", "")
+                user_text = f"{vision_prompt}\n\nUser: {user_input}"
+            else:
+                user_text = user_input
+
+            if audio_context:
+                user_text += f"\n\nContext from Audio:\n{audio_context}"
+
+            # Build message content
+            content = []
+            
+            # Handle Image Input (Anthropic supports base64 images)
+            if image_input:
+                try:
+                    buffered = io.BytesIO()
+                    if isinstance(image_input, str):
+                        with open(image_input, "rb") as img_file:
+                            img_data = img_file.read()
+                        # Detect media type
+                        img = Image.open(io.BytesIO(img_data))
+                        media_type = f"image/{img.format.lower()}" if img.format else "image/png"
+                        b64_data = base64.b64encode(img_data).decode('utf-8')
+                    else:
+                        # PIL Image
+                        image_input.save(buffered, format="PNG")
+                        b64_data = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                        media_type = "image/png"
+                    
+                    content.append({
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": media_type,
+                            "data": b64_data,
+                        }
+                    })
+                except Exception as e:
+                    print(f"Error encoding image for Anthropic: {e}")
+            
+            content.append({"type": "text", "text": user_text})
+
+            response = client.messages.create(
+                model=model_name,
+                max_tokens=4096,
+                system=system_prompt,
+                messages=[{"role": "user", "content": content}]
+            )
+            
+            # Extract text from response
+            result_text = ""
+            for block in response.content:
+                if hasattr(block, 'text'):
+                    result_text += block.text
+            
+            self.response_ready.emit(result_text)
+        except anthropic.AuthenticationError:
+            self.response_ready.emit("Error: Invalid Anthropic API Key. Check settings.")
+        except anthropic.RateLimitError:
+            self.response_ready.emit("Error: Anthropic rate limit exceeded. Try again later.")
+        except Exception as e:
+            self.response_ready.emit(f"Anthropic Error: {str(e)}")
+
+    def chat_openai(self, user_input, audio_context, image_input):
+        from openai import OpenAI
+        
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            self.response_ready.emit("Error: OpenAI API Key missing. Check settings.")
+            return
+
+        try:
+            client = OpenAI(api_key=api_key)
+            model_name = config["providers"]["openai"].get("model", "gpt-4o")
+            print(f"DEBUG OpenAI: Using model '{model_name}'")
+            
+            # Select Prompt
+            system_prompt = config["prompts"]["system"]
+            if image_input:
+                vision_prompt = config["prompts"].get("vision", "")
+                user_text = f"{vision_prompt}\n\nUser: {user_input}"
+            else:
+                user_text = user_input
+
+            if audio_context:
+                user_text += f"\n\nContext from Audio:\n{audio_context}"
+
+            # Build message content
+            content = []
+            
+            # Handle Image Input (OpenAI supports base64 images)
+            if image_input:
+                try:
+                    buffered = io.BytesIO()
+                    if isinstance(image_input, str):
+                        with open(image_input, "rb") as img_file:
+                            img_data = img_file.read()
+                        b64_data = base64.b64encode(img_data).decode('utf-8')
+                    else:
+                        # PIL Image
+                        image_input.save(buffered, format="PNG")
+                        b64_data = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                    
+                    content.append({
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/png;base64,{b64_data}"
+                        }
+                    })
+                except Exception as e:
+                    print(f"Error encoding image for OpenAI: {e}")
+            
+            content.append({"type": "text", "text": user_text})
+
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": content}
+            ]
+
+            print(f"DEBUG OpenAI: Calling API with model='{model_name}'")
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=messages,
+                max_tokens=4096
+            )
+            
+            self.response_ready.emit(response.choices[0].message.content)
+        except Exception as e:
+            err_msg = str(e)
+            if "401" in err_msg or "invalid_api_key" in err_msg.lower():
+                self.response_ready.emit("Error: Invalid OpenAI API Key. Check settings.")
+            elif "rate_limit" in err_msg.lower():
+                self.response_ready.emit("Error: OpenAI rate limit exceeded. Try again later.")
+            else:
+                self.response_ready.emit(f"OpenAI Error: {err_msg}")
+
+    def chat_cerebras(self, user_input, audio_context, image_input):
+        from cerebras.cloud.sdk import Cerebras
+        
+        api_key = os.environ.get("CEREBRAS_API_KEY")
+        if not api_key:
+            self.response_ready.emit("Error: Cerebras API Key missing. Check settings.")
+            return
+
+        try:
+            client = Cerebras(api_key=api_key)
+            model_name = config["providers"].get("cerebras", {}).get("model", "llama-4-scout-17b-16e-instruct")
+            print(f"DEBUG Cerebras: Using model '{model_name}'")
+            
+            # Select Prompt
+            system_prompt = config["prompts"]["system"]
+            if image_input:
+                # Note: Cerebras may not support vision directly, send text only
+                vision_prompt = config["prompts"].get("vision", "")
+                user_text = f"{vision_prompt}\n\nUser: {user_input}\n\n(Note: Image analysis not directly supported by Cerebras. Please describe what you need help with.)"
+            else:
+                user_text = user_input
+
+            if audio_context:
+                user_text += f"\n\nContext from Audio:\n{audio_context}"
+
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_text}
+            ]
+
+            print(f"DEBUG Cerebras: Calling API with model='{model_name}'")
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=messages,
+            )
+            
+            self.response_ready.emit(response.choices[0].message.content)
+        except Exception as e:
+            err_msg = str(e)
+            if "401" in err_msg or "api_key" in err_msg.lower() or "authentication" in err_msg.lower():
+                self.response_ready.emit("Error: Invalid Cerebras API Key. Check settings.")
+            elif "rate_limit" in err_msg.lower():
+                self.response_ready.emit("Error: Cerebras rate limit exceeded. Try again later.")
+            else:
+                self.response_ready.emit(f"Cerebras Error: {err_msg}")
 
     def transcribe(self, audio_path):
         # Legacy file-based transcription (still useful for full recording save)
@@ -446,7 +672,7 @@ class SettingsDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Settings")
-        self.setFixedSize(500, 450)
+        self.setFixedSize(500, 550)
         
         # --- Stealth Mode for Settings Window ---
         try:
@@ -553,7 +779,7 @@ class SettingsDialog(QDialog):
         
         # Active Provider
         self.combo_provider = StealthComboBox()
-        self.combo_provider.addItems(["gemini", "ollama"])
+        self.combo_provider.addItems(["gemini", "ollama", "anthropic", "openai", "cerebras"])
         self.combo_provider.setCurrentText(config.get("active_provider", "gemini"))
         self.combo_provider.currentTextChanged.connect(self.toggle_provider_settings)
         gen_layout.addRow("Active Provider:", self.combo_provider)
@@ -598,6 +824,64 @@ class SettingsDialog(QDialog):
         
         ollama_layout.addRow("Ollama Model:", ollama_model_layout)
         gen_layout.addRow(self.ollama_group)
+        
+        # Anthropic Settings
+        self.anthropic_group = QWidget()
+        anthropic_layout = QFormLayout(self.anthropic_group)
+        self.anthropic_api_key_input = QLineEdit()
+        self.anthropic_api_key_input.setEchoMode(QLineEdit.Password)
+        self.anthropic_api_key_input.setText(os.environ.get("ANTHROPIC_API_KEY", ""))
+        anthropic_layout.addRow("Anthropic API Key:", self.anthropic_api_key_input)
+        
+        self.anthropic_model_combo = StealthComboBox()
+        self.anthropic_model_combo.setEditable(True)
+        self.anthropic_model_combo.addItems(["claude-sonnet-4-20250514", "claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus-20240229"])
+        self.anthropic_model_combo.setCurrentText(config["providers"].get("anthropic", {}).get("model", "claude-sonnet-4-20250514"))
+        anthropic_layout.addRow("Anthropic Model:", self.anthropic_model_combo)
+        gen_layout.addRow(self.anthropic_group)
+        
+        # OpenAI Settings
+        self.openai_group = QWidget()
+        openai_layout = QFormLayout(self.openai_group)
+        self.openai_api_key_input = QLineEdit()
+        self.openai_api_key_input.setEchoMode(QLineEdit.Password)
+        self.openai_api_key_input.setText(os.environ.get("OPENAI_API_KEY", ""))
+        openai_layout.addRow("OpenAI API Key:", self.openai_api_key_input)
+        
+        self.openai_model_combo = StealthComboBox()
+        self.openai_model_combo.setEditable(True)
+        self.openai_model_combo.addItems(["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "o1-mini", "o1-preview"])
+        self.openai_model_combo.setCurrentText(config["providers"].get("openai", {}).get("model", "gpt-4o"))
+        openai_layout.addRow("OpenAI Model:", self.openai_model_combo)
+        gen_layout.addRow(self.openai_group)
+        
+        # Cerebras Settings
+        self.cerebras_group = QWidget()
+        cerebras_layout = QFormLayout(self.cerebras_group)
+        self.cerebras_api_key_input = QLineEdit()
+        self.cerebras_api_key_input.setEchoMode(QLineEdit.Password)
+        self.cerebras_api_key_input.setText(os.environ.get("CEREBRAS_API_KEY", ""))
+        cerebras_layout.addRow("Cerebras API Key:", self.cerebras_api_key_input)
+        
+        self.cerebras_model_combo = StealthComboBox()
+        self.cerebras_model_combo.setEditable(True)
+        # Load cached models or default
+        cached_cerebras_models = config["providers"].get("cerebras", {}).get("cached_models", ["llama-4-scout-17b-16e-instruct", "llama3.1-8b", "llama3.1-70b"])
+        self.cerebras_model_combo.addItems(cached_cerebras_models)
+        self.cerebras_model_combo.setCurrentText(config["providers"].get("cerebras", {}).get("model", "llama-4-scout-17b-16e-instruct"))
+        
+        btn_refresh_cerebras = QPushButton()
+        btn_refresh_cerebras.setIcon(qta.icon('fa5s.sync-alt', color='#d1d5db'))
+        btn_refresh_cerebras.setFixedSize(30, 30)
+        btn_refresh_cerebras.setToolTip("Fetch Cerebras Models")
+        btn_refresh_cerebras.clicked.connect(self.fetch_cerebras_models)
+        
+        cerebras_model_layout = QHBoxLayout()
+        cerebras_model_layout.addWidget(self.cerebras_model_combo)
+        cerebras_model_layout.addWidget(btn_refresh_cerebras)
+        
+        cerebras_layout.addRow("Cerebras Model:", cerebras_model_layout)
+        gen_layout.addRow(self.cerebras_group)
         
         # --- Tab 2: Prompts ---
         self.tab_prompts = QWidget()
@@ -648,12 +932,22 @@ class SettingsDialog(QDialog):
         self.toggle_provider_settings(self.combo_provider.currentText())
 
     def toggle_provider_settings(self, provider):
+        self.gemini_group.hide()
+        self.ollama_group.hide()
+        self.anthropic_group.hide()
+        self.openai_group.hide()
+        self.cerebras_group.hide()
+        
         if provider == "gemini":
             self.gemini_group.show()
-            self.ollama_group.hide()
-        else:
-            self.gemini_group.hide()
+        elif provider == "ollama":
             self.ollama_group.show()
+        elif provider == "anthropic":
+            self.anthropic_group.show()
+        elif provider == "openai":
+            self.openai_group.show()
+        elif provider == "cerebras":
+            self.cerebras_group.show()
 
     def load_mode_prompt(self, mode_name):
         prompt_text = config["prompts"]["modes"].get(mode_name, "")
@@ -707,18 +1001,75 @@ class SettingsDialog(QDialog):
             print(f"Error fetching Ollama models: {e}")
             self.ollama_model_combo.addItem("Error fetching models")
 
+    def fetch_cerebras_models(self):
+        from cerebras.cloud.sdk import Cerebras
+        
+        api_key = self.cerebras_api_key_input.text().strip()
+        if not api_key:
+            # Try from environment
+            api_key = os.environ.get("CEREBRAS_API_KEY", "")
+        
+        if not api_key:
+            print("Cerebras API key required to fetch models")
+            self.cerebras_model_combo.clear()
+            self.cerebras_model_combo.addItem("API key required")
+            return
+                
+        try:
+            client = Cerebras(api_key=api_key)
+            response = client.models.list()
+            models = [m.id for m in response.data]
+            self.cerebras_model_combo.clear()
+            self.cerebras_model_combo.addItems(models)
+            if models:
+                self.cerebras_model_combo.setCurrentIndex(0)
+            # Cache them
+            if "cerebras" not in config["providers"]:
+                config["providers"]["cerebras"] = {}
+            config["providers"]["cerebras"]["cached_models"] = models
+            print(f"Fetched {len(models)} Cerebras models: {models}")
+        except Exception as e:
+            print(f"Error fetching Cerebras models: {e}")
+            self.cerebras_model_combo.clear()
+            self.cerebras_model_combo.addItem("Error fetching models")
+
     def save_settings(self):
         # Providers
         config["active_provider"] = self.combo_provider.currentText()
         
-        # Save API Key to .env
-        api_key = self.api_key_input.text().strip()
-        set_key(ENV_FILE, "GEMINI_API_KEY", api_key)
-        os.environ["GEMINI_API_KEY"] = api_key # Update runtime env
-        
+        # Save Gemini API Key to .env
+        gemini_api_key = self.api_key_input.text().strip()
+        set_key(ENV_FILE, "GEMINI_API_KEY", gemini_api_key)
+        os.environ["GEMINI_API_KEY"] = gemini_api_key
         config["providers"]["gemini"]["model"] = self.gemini_model_combo.currentText().strip()
+        
+        # Ollama Settings
         config["providers"]["ollama"]["host"] = self.ollama_host_input.text().strip()
         config["providers"]["ollama"]["model"] = self.ollama_model_combo.currentText().strip()
+        
+        # Save Anthropic API Key to .env
+        anthropic_api_key = self.anthropic_api_key_input.text().strip()
+        set_key(ENV_FILE, "ANTHROPIC_API_KEY", anthropic_api_key)
+        os.environ["ANTHROPIC_API_KEY"] = anthropic_api_key
+        if "anthropic" not in config["providers"]:
+            config["providers"]["anthropic"] = {}
+        config["providers"]["anthropic"]["model"] = self.anthropic_model_combo.currentText().strip()
+        
+        # Save OpenAI API Key to .env
+        openai_api_key = self.openai_api_key_input.text().strip()
+        set_key(ENV_FILE, "OPENAI_API_KEY", openai_api_key)
+        os.environ["OPENAI_API_KEY"] = openai_api_key
+        if "openai" not in config["providers"]:
+            config["providers"]["openai"] = {}
+        config["providers"]["openai"]["model"] = self.openai_model_combo.currentText().strip()
+        
+        # Save Cerebras API Key to .env
+        cerebras_api_key = self.cerebras_api_key_input.text().strip()
+        set_key(ENV_FILE, "CEREBRAS_API_KEY", cerebras_api_key)
+        os.environ["CEREBRAS_API_KEY"] = cerebras_api_key
+        if "cerebras" not in config["providers"]:
+            config["providers"]["cerebras"] = {}
+        config["providers"]["cerebras"]["model"] = self.cerebras_model_combo.currentText().strip()
         
         # Prompts
         # Only update the CURRENTLY SELECTED mode with the text in the box
@@ -1443,6 +1794,64 @@ class MainWindow(QMainWindow):
                 action.setCheckable(True)
                 action.setChecked(True)
             action.triggered.connect(lambda checked, m=model: self.switch_model("ollama", m))
+        
+        # --- Anthropic Models ---
+        anthropic_menu = StealthMenu(menu)
+        anthropic_menu.setTitle("Anthropic")
+        menu.addMenu(anthropic_menu)
+        
+        anthropic_menu.setIcon(qta.icon('fa5s.robot', color='#d1d5db'))
+        anthropic_menu.setStyleSheet(menu.styleSheet())
+        
+        anthropic_models = ["claude-sonnet-4-20250514", "claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus-20240229"]
+        current_anthropic = config["providers"].get("anthropic", {}).get("model", "claude-sonnet-4-20250514")
+        
+        for model in anthropic_models:
+            action = anthropic_menu.addAction(model)
+            if model == current_anthropic and config.get("active_provider") == "anthropic":
+                action.setCheckable(True)
+                action.setChecked(True)
+            action.triggered.connect(lambda checked, m=model: self.switch_model("anthropic", m))
+        
+        # --- OpenAI Models ---
+        openai_menu = StealthMenu(menu)
+        openai_menu.setTitle("OpenAI")
+        menu.addMenu(openai_menu)
+        
+        openai_menu.setIcon(qta.icon('fa5s.brain', color='#d1d5db'))
+        openai_menu.setStyleSheet(menu.styleSheet())
+        
+        openai_models = ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "o1-mini", "o1-preview"]
+        current_openai = config["providers"].get("openai", {}).get("model", "gpt-4o")
+        
+        for model in openai_models:
+            action = openai_menu.addAction(model)
+            if model == current_openai and config.get("active_provider") == "openai":
+                action.setCheckable(True)
+                action.setChecked(True)
+            action.triggered.connect(lambda checked, m=model: self.switch_model("openai", m))
+        
+        # --- Cerebras Models ---
+        cerebras_menu = StealthMenu(menu)
+        cerebras_menu.setTitle("Cerebras")
+        menu.addMenu(cerebras_menu)
+        
+        cerebras_menu.setIcon(qta.icon('fa5s.bolt', color='#d1d5db'))
+        cerebras_menu.setStyleSheet(menu.styleSheet())
+        
+        # Use cached models from config, NO network call here
+        cerebras_models = config["providers"].get("cerebras", {}).get("cached_models", [])
+        current_cerebras = config["providers"].get("cerebras", {}).get("model", "llama-4-scout-17b-16e-instruct")
+        
+        if not cerebras_models:
+            cerebras_models = [current_cerebras] # Fallback
+        
+        for model in cerebras_models:
+            action = cerebras_menu.addAction(model)
+            if model == current_cerebras and config.get("active_provider") == "cerebras":
+                action.setCheckable(True)
+                action.setChecked(True)
+            action.triggered.connect(lambda checked, m=model: self.switch_model("cerebras", m))
             
         menu.addSeparator()
         action_settings = menu.addAction("Configure Providers...")
@@ -1618,23 +2027,49 @@ class MainWindow(QMainWindow):
                 self.open_settings()
                 return
             config["providers"]["ollama"]["model"] = model_name
+        
+        elif provider == "anthropic":
+            if not os.environ.get("ANTHROPIC_API_KEY"):
+                QMessageBox.warning(self, "Setup Required", "Anthropic API Key is missing. Please configure it in Settings.")
+                self.open_settings()
+                return
+            if "anthropic" not in config["providers"]:
+                config["providers"]["anthropic"] = {}
+            config["providers"]["anthropic"]["model"] = model_name
+        
+        elif provider == "openai":
+            if not os.environ.get("OPENAI_API_KEY"):
+                QMessageBox.warning(self, "Setup Required", "OpenAI API Key is missing. Please configure it in Settings.")
+                self.open_settings()
+                return
+            if "openai" not in config["providers"]:
+                config["providers"]["openai"] = {}
+            config["providers"]["openai"]["model"] = model_name
+            print(f"DEBUG switch_model: OpenAI model set to '{model_name}'")
 
         self.set_active_provider(provider)
-        
-        # Update Button Text
-        display_model = model_name.replace("gemini-", "").replace("llama", "Llama ")
-        # self.btn_model.setText(f" {display_model} ▼")
-        # self.btn_model.setIcon(qta.icon('fa5s.robot', color='#d1d5db'))
-        self.lbl_model_name.setText(display_model)
+        self.update_model_chip()
 
     def set_active_provider(self, provider):
         config["active_provider"] = provider
         save_config()
-        # Text update handled in switch_model or init, but if called directly:
-        model = config['providers'][provider].get('model', 'Unknown')
-        display_model = model.replace("gemini-", "").replace("llama", "Llama ")
-        # self.btn_model.setText(f" {display_model} ▼")
-        # self.btn_model.setIcon(qta.icon('fa5s.robot', color='#d1d5db'))
+
+    def update_model_chip(self):
+        """Update the model chip display to reflect current provider and model."""
+        provider = config.get('active_provider', 'gemini')
+        model = config['providers'].get(provider, {}).get('model', 'Unknown')
+        
+        # Shorten model name for display
+        display_model = model
+        if provider == "gemini":
+            display_model = model.replace("gemini-", "")
+        elif provider == "ollama":
+            display_model = model.replace("llama", "Llama ")
+        elif provider == "anthropic":
+            display_model = model.replace("claude-", "").replace("-20250514", "").replace("-20241022", "").replace("-20240229", "")
+        elif provider == "openai":
+            display_model = model  # Keep as-is for OpenAI
+        
         self.lbl_model_name.setText(display_model)
 
     def setup_stealth(self):
@@ -1925,7 +2360,9 @@ class MainWindow(QMainWindow):
 
     def take_screenshot(self):
         try:
-            screenshot = ImageGrab.grab()
+            # Capture all screens to ensure we get the right context regardless of monitor
+            screenshot = ImageGrab.grab(all_screens=True)
+            print(f"DEBUG: Screenshot taken. Size: {screenshot.size}")
             # No longer saving to disk for stealth/cleanliness
             
             self.expand_window()
@@ -1957,6 +2394,8 @@ class MainWindow(QMainWindow):
         dialog.exec()
         # Refresh prompt buttons in case of deletion/changes
         self.refresh_prompt_buttons()
+        # Refresh model chip to reflect any provider/model changes
+        self.update_model_chip()
 
     def close_app(self):
         print("Closing app...")

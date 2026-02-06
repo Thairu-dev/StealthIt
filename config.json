@@ -4,14 +4,37 @@
             "model": "gemini-2.5-flash"
         },
         "ollama": {
-            "host": "http://localhost:11434",
-            "model": "llama3:latest",
+            "host": "http://localhost:11434/api/tags",
+            "model": "llava:7b",
             "cached_models": [
+                "llava:7b",
+                "llama3.1:8b",
+                "qwen2.5-coder:latest",
                 "llama3:latest"
+            ]
+        },
+        "anthropic": {
+            "api_key": "",
+            "model": "claude-sonnet-4-20250514"
+        },
+        "openai": {
+            "api_key": "",
+            "model": "gpt-4o"
+        },
+        "cerebras": {
+            "api_key": "",
+            "model": "gpt-oss-120b",
+            "cached_models": [
+                "llama3.1-8b",
+                "gpt-oss-120b",
+                "zai-glm-4.7",
+                "qwen-3-235b-a22b-instruct-2507",
+                "qwen-3-32b",
+                "llama-3.3-70b"
             ]
         }
     },
-    "active_provider": "gemini",
+    "active_provider": "cerebras",
     "prompts": {
         "system": "Offer all the help you  can",
         "vision": "You are a highly efficient, context-aware visual assistant tasked with analyzing a provided screenshot and giving a correct answer/answers to a question/questions on the provided screenshot . Your response must be highly accurate, concise, and based on the visual and textual data visible in the image If what is on the screenshot is not sufficient you can use generally available information to give an answer.",

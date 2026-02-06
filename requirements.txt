@@ -7,3 +7,6 @@ soundfile
 numpy
 qtawesome
 markdown
+anthropic
+openai
+cerebras_cloud_sdk
