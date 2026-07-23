@@ -30,6 +30,16 @@ from PySide6.QtGui import QColor, QPalette, QIcon, QFont, QCursor, QPainter, QBr
 
 import markdown
 
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 # --- Configuration ---
 CONFIG_FILE = "config.json"
 ENV_FILE = ".env"
@@ -713,11 +723,14 @@ class SettingsDialog(QDialog):
                 border-bottom-right-radius: 6px;
             }
             QComboBox::down-arrow {
-                image: url(resources/chevron-down.png);
+                image: url(%CHEVRON_ICON%);
                 width: 12px;
                 height: 12px;
                 margin-right: 8px;
             }
+        """.replace("%CHEVRON_ICON%", resource_path("resources/chevron-down.png").replace('\\', '/')))
+        
+        self.setStyleSheet(self.styleSheet() + """
             QTabWidget::pane {
                 border: 1px solid rgba(255, 255, 255, 0.1);
                 background-color: rgba(0, 0, 0, 0.2);
@@ -1630,7 +1643,7 @@ class MainWindow(QMainWindow):
         self.lbl_model_name.setStyleSheet("color: #d1d5db; font-size: 12px; font-weight: bold; background: transparent; border: none;")
         
         self.lbl_model_arrow = QLabel()
-        self.lbl_model_arrow.setPixmap(QIcon("resources/chevron-down.png").pixmap(10, 10))
+        self.lbl_model_arrow.setPixmap(QIcon(resource_path("resources/chevron-down.png")).pixmap(10, 10))
         self.lbl_model_arrow.setStyleSheet("background: transparent; border: none;")
         
         self.model_chip_layout.addWidget(self.lbl_model_icon)

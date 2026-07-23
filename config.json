@@ -19,7 +19,7 @@
         },
         "openai": {
             "api_key": "",
-            "model": "gpt-4o"
+            "model": "gpt-4o-mini"
         },
         "cerebras": {
             "api_key": "",
@@ -34,7 +34,7 @@
             ]
         }
     },
-    "active_provider": "cerebras",
+    "active_provider": "gemini",
     "prompts": {
         "system": "Offer all the help you  can",
         "vision": "You are a highly efficient, context-aware visual assistant tasked with analyzing a provided screenshot and giving a correct answer/answers to a question/questions on the provided screenshot . Your response must be highly accurate, concise, and based on the visual and textual data visible in the image If what is on the screenshot is not sufficient you can use generally available information to give an answer.",
@@ -44,6 +44,5 @@
             "Coding": "You are an expert software engineer. Provide code solutions and debugging tips.",
             "test": "tetetegyuywguw"
         }
-    },
-    "active_mode": "General"
+    }
 }
