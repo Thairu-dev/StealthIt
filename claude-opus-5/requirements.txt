@@ -1,0 +1,38 @@
+# Core UI
+PySide6>=6.6
+
+# Imaging (screenshots, vision payloads)
+Pillow>=10.0
+
+# Audio capture.
+# PyAudioWPatch is a drop-in PyAudio fork that adds WASAPI loopback, which is
+# what lets StealthIt hear the other side of a call rather than only the
+# microphone. It ships prebuilt Windows wheels -- no compiler needed.
+PyAudioWPatch>=0.2.12.7
+numpy>=1.24
+
+# Local speech-to-text. Runs on-device, so audio never leaves the machine and
+# transcription works with no API key and no internet.
+openai-whisper>=20231117
+
+# Syntax highlighting for code in answers
+Pygments>=2.17
+
+# Notes on what is deliberately NOT here:
+#
+#   google-generativeai / anthropic / openai / cerebras_cloud_sdk
+#     All five providers are called over plain HTTPS via urllib. The official
+#     SDKs would add ~60 MB (grpc, protobuf, httpx, pydantic) to the packaged
+#     binary, reconfigure global state per call, and in the Gemini SDK's case
+#     expose a streaming iterator that cannot be cancelled mid-response.
+#
+#   python-dotenv
+#     API keys live in DPAPI-encrypted storage, not a plaintext .env.
+#
+#   qtawesome
+#     Pulled in ~2 MB of icon fonts and rasterised PNGs to disk on every
+#     startup. Icons here are drawn with QPainter or are plain text.
+#
+#   markdown
+#     Replaced by a purpose-built streaming renderer that keeps partial code
+#     fences styled and escapes model output safely.
