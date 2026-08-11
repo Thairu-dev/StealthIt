@@ -25,10 +25,10 @@ import stealthit.native.screen
 # Mock screen capture for headless CI environments (like GitHub Actions)
 if os.environ.get("GITHUB_ACTIONS"):
     from PIL import Image
-    def mock_grab(*args, **kwargs):
-        return Image.new("RGB", (200, 200), (0, 0, 0))
+    def mock_grab(x=0, y=0, w=200, h=200, *args, **kwargs):
+        return Image.new("RGB", (w, h), (0, 0, 0))
     stealthit.native.screen.grab = mock_grab
-    stealthit.native.screen.grab_monitor = lambda m: mock_grab()
+    stealthit.native.screen.grab_monitor = lambda m: mock_grab(m.x, m.y, m.width, m.height)
 
 results: list[tuple[str, bool, str]] = []
 

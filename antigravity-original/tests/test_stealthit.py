@@ -49,6 +49,7 @@ class MockQWidget(MockQObject):
     def setSizePolicy(self, *args): pass
     def setVerticalScrollBarPolicy(self, *args): pass
     def setHorizontalScrollBarPolicy(self, *args): pass
+    def viewport(self): return MagicMock()
     def document(self): return MagicMock()
     def setPlaceholderText(self, *args): pass
     def toPlainText(self): return ""
@@ -293,6 +294,7 @@ module_patches = {
     "ctypes": mock_ctypes,
     "ctypes.wintypes": MagicMock(),
     "qtawesome": MagicMock(),
+    "numpy": MagicMock(),
 }
 
 # Import main within the patch context

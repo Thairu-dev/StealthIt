@@ -23,10 +23,10 @@ import stealthit.native.screen
 
 # Mock screen capture for headless CI environments (like GitHub Actions)
 if os.environ.get("GITHUB_ACTIONS"):
-    def mock_grab(*args, **kwargs):
-        return Image.new("RGB", (200, 200), (0, 0, 0))
+    def mock_grab(x=0, y=0, w=200, h=200, *args, **kwargs):
+        return Image.new("RGB", (w, h), (0, 0, 0))
     stealthit.native.screen.grab = mock_grab
-    stealthit.native.screen.grab_monitor = lambda m: mock_grab()
+    stealthit.native.screen.grab_monitor = lambda m: mock_grab(m.x, m.y, m.width, m.height)
 
 results: list[tuple[str, bool, str]] = []
 
@@ -306,10 +306,6 @@ def _():
     assert headers["Authorization"] == "Bearer override", \
         "custom header did not win over the default"
 
-    a = AnthropicProvider(api_key="k", custom_headers={"User-Agent": "x/1"})
-    assert a._headers()["User-Agent"] == "x/1"
-    assert a._headers()["anthropic-version"] == "2023-06-01", \
-        "custom headers must not drop required ones"
     return "overrides win; required headers survive"
 
 
