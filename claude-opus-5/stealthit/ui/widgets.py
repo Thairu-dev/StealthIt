@@ -302,6 +302,7 @@ class MessageBubble(QFrame):
     One message. Assistant messages render markdown with highlighted code and
     a copy affordance per block; user messages are plain and right-aligned.
     """
+    edit_requested = Signal(str)
 
     def __init__(self, text: str, is_user: bool,
                  parent: QWidget | None = None) -> None:
@@ -334,6 +335,41 @@ class MessageBubble(QFrame):
                 f"padding:2px 0;color:{PALETTE.text};}}")
 
         outer.addWidget(self.body)
+        
+        self.actions_layout = QHBoxLayout()
+        self.actions_layout.setContentsMargins(0, 0, 0, 0)
+        self.actions_layout.setSpacing(SPACE.sm)
+
+        if is_user:
+            self.actions_layout.addStretch()
+
+            self.btn_edit = QPushButton("  Edit")
+            self.btn_edit.setIcon(icons.icon("edit", 12, PALETTE.text_faint))
+            self.btn_edit.setIconSize(QSize(12, 12))
+            self.btn_edit.setCursor(Qt.PointingHandCursor)
+            self.btn_edit.setStyleSheet(
+                f"QPushButton{{color:{PALETTE.text_faint};background:transparent;"
+                f"border:none;font-size:{TYPE.size_xs}px;padding:2px 6px;}}"
+                f"QPushButton:hover{{color:{PALETTE.text};}}")
+            self.btn_edit.clicked.connect(self._request_edit)
+            self.actions_layout.addWidget(self.btn_edit)
+
+        self.btn_copy = QPushButton("  Copy")
+        self.btn_copy.setIcon(icons.icon("copy", 12, PALETTE.text_faint))
+        self.btn_copy.setIconSize(QSize(12, 12))
+        self.btn_copy.setCursor(Qt.PointingHandCursor)
+        self.btn_copy.setStyleSheet(
+            f"QPushButton{{color:{PALETTE.text_faint};background:transparent;"
+            f"border:none;font-size:{TYPE.size_xs}px;padding:2px 6px;}}"
+            f"QPushButton:hover{{color:{PALETTE.text};}}")
+        self.btn_copy.clicked.connect(self._copy_text)
+        self.actions_layout.addWidget(self.btn_copy)
+        
+        if not is_user:
+            self.actions_layout.addStretch()
+
+        outer.addLayout(self.actions_layout)
+
         self._code_bars: list[CodeBlockBar] = []
         self._outer = outer
         self.set_text(text)
@@ -354,6 +390,19 @@ class MessageBubble(QFrame):
 
     def finalise(self) -> None:
         self.set_text(self._raw, streaming=False)
+
+    def _copy_text(self) -> None:
+        QApplication.clipboard().setText(self._raw)
+        self.btn_copy.setText("  Copied")
+        self.btn_copy.setIcon(icons.icon("copy", 12, PALETTE.success))
+        QTimer.singleShot(1400, self._reset_copy_label)
+
+    def _reset_copy_label(self) -> None:
+        self.btn_copy.setText("  Copy")
+        self.btn_copy.setIcon(icons.icon("copy", 12, PALETTE.text_faint))
+
+    def _request_edit(self) -> None:
+        self.edit_requested.emit(self._raw)
 
     def _rebuild_code_bars(self, text: str) -> None:
         for bar in self._code_bars:

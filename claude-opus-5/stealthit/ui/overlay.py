@@ -958,6 +958,7 @@ class Overlay(QMainWindow):
     def _add_bubble(self, text: str, is_user: bool) -> MessageBubble:
         self.empty_hint.hide()
         bubble = MessageBubble(text, is_user)
+        bubble.edit_requested.connect(self._edit_bubble_text)
         
         idx = self.answer_layout.indexOf(self.thinking)
         if idx < 0:
@@ -966,6 +967,10 @@ class Overlay(QMainWindow):
         self.answer_layout.insertWidget(idx, bubble)
         QTimer.singleShot(16, self._scroll_answers_to_bottom)
         return bubble
+
+    def _edit_bubble_text(self, text: str) -> None:
+        self.input.setPlainText(text)
+        self.focus_prompt()
 
     def _scroll_answers_to_bottom(self) -> None:
         bar = self.answer_scroll.verticalScrollBar()

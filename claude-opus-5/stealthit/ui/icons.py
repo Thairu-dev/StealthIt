@@ -138,6 +138,17 @@ def _copy(p: QPainterPath) -> None:
     p.lineTo(17, 5)
 
 
+def _edit(p: QPainterPath) -> None:
+    # A simple pencil pointing bottom-left
+    p.moveTo(17, 3)
+    p.lineTo(21, 7)
+    p.lineTo(7, 21)
+    p.lineTo(3, 21)
+    p.lineTo(3, 17)
+    p.lineTo(17, 3)
+    p.closeSubpath()
+
+
 def _eye_off(p: QPainterPath) -> None:
     """Stealth: the app is watching, nothing is watching the app."""
     p.moveTo(2, 12)
@@ -217,6 +228,7 @@ _BUILDERS = {
     "stop": _stop,
     "plus": _plus,
     "copy": _copy,
+    "edit": _edit,
     "eye-off": _eye_off,
     "layers": _layers,
     "message": _message,
