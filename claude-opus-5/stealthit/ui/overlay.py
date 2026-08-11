@@ -320,10 +320,6 @@ class Overlay(QMainWindow):
 
         layout.addStretch()
 
-        self.thinking = ThinkingIndicator()
-        self.thinking.hide()
-        layout.addWidget(self.thinking)
-
         self.btn_history = self._icon_button(
             "list", "Past conversations  (Ctrl+Shift+H)")
         self.btn_history.clicked.connect(self.open_history)
@@ -386,6 +382,11 @@ class Overlay(QMainWindow):
         self.answer_layout.setContentsMargins(SPACE.lg, SPACE.md,
                                               SPACE.lg, SPACE.md)
         self.answer_layout.setSpacing(SPACE.md)
+
+        self.thinking = ThinkingIndicator()
+        self.thinking.hide()
+        self.answer_layout.addWidget(self.thinking)
+
         self.answer_layout.addStretch()
 
         self.empty_hint = QLabel(
@@ -933,7 +934,10 @@ class Overlay(QMainWindow):
         image = self._pending_image
         if not text and image is None:
             return
+
+        display_text = text
         if not text:
+            display_text = "Analysing screenshot..."
             # Sent when a screenshot is captured with nothing typed. Phrased
             # to get a useful answer about whatever is on screen rather than a
             # description of it.
@@ -943,7 +947,7 @@ class Overlay(QMainWindow):
         self.expand()
         self.input.clear()
         self._clear_attachment()
-        self._add_bubble(text, is_user=True)
+        self._add_bubble(display_text, is_user=True)
         self.session.add_user(text, had_image=image is not None)
         self.engine.ask(self.session, text, image=image)
 
@@ -954,7 +958,12 @@ class Overlay(QMainWindow):
     def _add_bubble(self, text: str, is_user: bool) -> MessageBubble:
         self.empty_hint.hide()
         bubble = MessageBubble(text, is_user)
-        self.answer_layout.insertWidget(self.answer_layout.count() - 1, bubble)
+        
+        idx = self.answer_layout.indexOf(self.thinking)
+        if idx < 0:
+            idx = self.answer_layout.count() - 1
+            
+        self.answer_layout.insertWidget(idx, bubble)
         QTimer.singleShot(16, self._scroll_answers_to_bottom)
         return bubble
 
@@ -1006,6 +1015,7 @@ class Overlay(QMainWindow):
         if state == "thinking":
             self.thinking.start()
             self.status_dot.set_state("thinking")
+            QTimer.singleShot(16, self._scroll_answers_to_bottom)
         else:
             self.thinking.stop()
             self.status_dot.set_state(
@@ -1016,7 +1026,7 @@ class Overlay(QMainWindow):
         if self.settings.behaviour.save_sessions:
             self.sessions.save(self.session)
         self.session = Session(mode=self.settings.active_mode)
-        self._clear_widgets(self.answer_layout, keep={self.empty_hint})
+        self._clear_widgets(self.answer_layout, keep={self.empty_hint, self.thinking})
         self._transcript_widgets = {}
         self._last_transcript_index = -1
         self._last_transcript_widget = None
@@ -1402,8 +1412,9 @@ class Overlay(QMainWindow):
         self.settings.active_mode = (session.mode
                                      if session.mode in self.settings.modes
                                      else self.settings.active_mode)
-
-        self._clear_widgets(self.answer_layout, keep={self.empty_hint})
+        self.input.clear()
+        self._clear_attachment()
+        self._clear_widgets(self.answer_layout, keep={self.empty_hint, self.thinking})
         self._clear_widgets(self.transcript_layout)
         self._partial_widgets.clear()
         self._last_transcript_index = -1

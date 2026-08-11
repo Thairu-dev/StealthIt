@@ -454,7 +454,7 @@ def _():
     _overlay.new_session()
     assert not _overlay.session.turns
     assert not _overlay.session.transcript
-    assert _overlay.answer_layout.count() == 2, \
+    assert _overlay.answer_layout.count() == 3, \
         f"answer pane not cleared ({_overlay.answer_layout.count()})"
     return "history, transcript and widgets cleared"
 
