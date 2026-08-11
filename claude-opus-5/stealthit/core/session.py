@@ -129,7 +129,7 @@ class Session:
         return recent[-1]["text"] if recent else ""
 
     # ---------------------------------------------------------------- context
-    def build_messages(self, prompt: str, max_turns: int = 12,
+    def build_messages(self, max_turns: int = 12,
                        token_budget: int = 6000) -> list[Message]:
         """
         History window for the next request.
@@ -139,18 +139,16 @@ class Session:
         eventually sends a context that costs more than the answer.
         """
         selected: list[Turn] = []
-        used = estimate_tokens(prompt)
+        used = 0
         for turn in reversed(self.turns[-max_turns * 2:]):
             cost = estimate_tokens(turn.text)
-            if used + cost > token_budget:
+            if used + cost > token_budget and selected:
                 break
             selected.append(turn)
             used += cost
         selected.reverse()
 
-        messages = [Message(role=t.role, text=t.text) for t in selected]
-        messages.append(Message(role="user", text=prompt))
-        return messages
+        return [Message(role=t.role, text=t.text) for t in selected]
 
     # ------------------------------------------------------------ persistence
     def to_dict(self) -> dict:

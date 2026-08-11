@@ -587,9 +587,9 @@ def _():
     s = Session()
     s.add_user("what is a monad")
     s.add_assistant("A monad is...")
-    s.add_user("explain that more simply")
-    msgs = s.build_messages("and give an example", max_turns=12)
-    assert len(msgs) == 4, f"expected 4 messages, got {len(msgs)}"
+    s.add_user("and give an example")
+    msgs = s.build_messages(max_turns=12)
+    assert len(msgs) == 3, f"expected 3 messages, got {len(msgs)}"
     assert msgs[0].role == "user" and "monad" in msgs[0].text
     assert msgs[1].role == "assistant"
     assert msgs[-1].text == "and give an example"
@@ -603,7 +603,8 @@ def _():
     for i in range(50):
         s.add_user(f"question {i} " + "padding " * 100)
         s.add_assistant(f"answer {i} " + "padding " * 100)
-    msgs = s.build_messages("final", token_budget=2000)
+    s.add_user("final")
+    msgs = s.build_messages(token_budget=2000)
     assert len(msgs) < 100, "budget not enforced"
     assert msgs[-1].text == "final"
     # Newest history must survive; oldest must be dropped.

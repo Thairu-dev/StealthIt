@@ -166,7 +166,7 @@ class AIEngine(QObject):
             system = f"{system}\n\n{settings.vision_prompt}"
 
         messages = session.build_messages(
-            prompt, max_turns=settings.behaviour.history_turns)
+            max_turns=settings.behaviour.history_turns)
 
         request = Request(
             messages=messages,
