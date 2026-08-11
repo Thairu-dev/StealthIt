@@ -264,7 +264,16 @@ class StealthController:
         self.apply_dark_mode()
         self.apply_rounded_corners()
 
-        if acrylic:
+        if stealth:
+            # When stealth is active, DWM accent policies (acrylic blur,
+            # transparent gradient) create a compositor-owned layer that the OS
+            # renders as a solid black rectangle when the window is excluded
+            # from capture. Clearing the accent policy leaves the window purely
+            # transparent via Qt's WA_TranslucentBackground and CSS rgba()
+            # backgrounds, which WDA_EXCLUDEFROMCAPTURE can make fully
+            # invisible -- exactly how the original version worked.
+            self.clear_acrylic()
+        elif acrylic:
             # The Win11 system backdrop ignores our tint and opacity, so it
             # is only useful when the user wants the stock look. The accent
             # policy is what actually honours the opacity slider, so it is
@@ -294,3 +303,4 @@ class StealthController:
             excluded_from_taskbar=no_taskbar,
             never_takes_focus=no_focus,
             detail="; ".join(problems))
+

@@ -193,17 +193,17 @@ class Overlay(QMainWindow):
         if not hasattr(self, "stealth"):
             return
 
-        # Re-assert the backdrop on every show, unconditionally.
-        #
-        # DWM composition applied to a window that has not been mapped yet
-        # does not reliably stick, so the treatment set up in __init__ was
-        # lost and the window came up painted with Qt's default light
-        # background -- a white flash that only cleared once something else
-        # (the opacity slider) happened to re-apply it.
-        self.stealth.apply_backdrop(
-            self.settings.appearance.acrylic,
-            tuple(self.settings.appearance.tint),
-            self.settings.appearance.opacity)
+        # Re-assert the backdrop on every show, unconditionally -- but only
+        # when stealth is off.  DWM accent policies (acrylic, transparent
+        # gradient) create a compositor-owned layer that the OS renders as a
+        # solid black rectangle when the window is excluded from capture.
+        # With stealth on, the dark translucent look comes from CSS rgba()
+        # backgrounds on a WA_TranslucentBackground window instead.
+        if not self.settings.behaviour.stealth:
+            self.stealth.apply_backdrop(
+                self.settings.appearance.acrylic,
+                tuple(self.settings.appearance.tint),
+                self.settings.appearance.opacity)
 
         # Qt can also recreate the native handle, which silently drops the
         # display affinity -- the window would become visible to capture with
@@ -224,6 +224,9 @@ class Overlay(QMainWindow):
 
     def _reassert_backdrop(self) -> None:
         if not hasattr(self, "stealth"):
+            return
+        # Skip DWM backdrop when stealth is active (same reason as showEvent).
+        if self.settings.behaviour.stealth:
             return
         self.stealth.apply_backdrop(
             self.settings.appearance.acrylic,

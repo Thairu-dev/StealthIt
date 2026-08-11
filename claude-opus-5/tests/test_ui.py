@@ -649,6 +649,11 @@ def _():
         calls.append((acrylic, opacity))
         return original(acrylic, tint, opacity)
 
+    # With stealth active, the DWM backdrop is intentionally skipped -- it
+    # causes a black rectangle in screen captures. Temporarily disable
+    # stealth so we can verify the backdrop is re-asserted when it should be.
+    saved_stealth = _overlay.settings.behaviour.stealth
+    _overlay.settings.behaviour.stealth = False
     _overlay.stealth.apply_backdrop = _spy
     try:
         _overlay.hide()
@@ -663,6 +668,7 @@ def _():
         assert calls[0][1] == _overlay.settings.appearance.opacity
     finally:
         _overlay.stealth.apply_backdrop = original
+        _overlay.settings.behaviour.stealth = saved_stealth
     return f"re-applied {len(calls)}x on show"
 
 
