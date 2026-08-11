@@ -8,6 +8,9 @@ This repository serves as a **Models Competition**, showcasing how different sta
 - **`/antigravity-original`**: The baseline, original project developed by Antigravity and Gemini-3-pro.
 - **`/claude-opus-5`**: A complete rebuild and enhancement of the app, built by Claude Opus 5 (featuring robust PySide6 Win32 integrations, custom OpenAI-compatible endpoints, and native OS APIs).
 
+> [!TIP]
+> **Recommended Version:** The `/claude-opus-5` (Claude v2) version is the most stable and feature-rich version of the application. It includes numerous bug fixes, UI improvements, and new capabilities (like local DPAPI encrypted keys and copy/edit tools) that are not present in the original baseline. We recommend using this version!
+
 *Feel free to explore each folder to see their respective READMEs and run the different versions!*
 
 ---
