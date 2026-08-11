@@ -138,5 +138,10 @@ AgentRouter is currently giving away **$175 worth of free tokens** to new users!
 1. Go to this referral link: **[https://agentrouter.org/register?aff=Plwl](https://agentrouter.org/register?aff=Plwl)**
 2. Sign up using your **GitHub account**. *(Note: The GitHub signup button is only visible if you are on a desktop browser).*
 
+## 💖 Support this Project
+
+If you find this project helpful, consider supporting the development!
+[![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://www.buymeacoffee.com/yourusername)
+
 ---
 *Built with ❤️ by Antigravity & Gemini-3-pro*

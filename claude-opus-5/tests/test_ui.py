@@ -20,6 +20,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 # Must be set before QApplication so the run needs no visible desktop session.
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+import stealthit.native.screen
+
+# Mock screen capture for headless CI environments (like GitHub Actions)
+if os.environ.get("GITHUB_ACTIONS"):
+    from PIL import Image
+    def mock_grab(*args, **kwargs):
+        return Image.new("RGB", (200, 200), (0, 0, 0))
+    stealthit.native.screen.grab = mock_grab
+    stealthit.native.screen.grab_monitor = lambda m: mock_grab()
+
 results: list[tuple[str, bool, str]] = []
 
 

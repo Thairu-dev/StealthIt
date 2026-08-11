@@ -48,6 +48,7 @@ class MockQWidget(MockQObject):
     def setObjectName(self, *args): pass
     def setSizePolicy(self, *args): pass
     def setVerticalScrollBarPolicy(self, *args): pass
+    def setHorizontalScrollBarPolicy(self, *args): pass
     def document(self): return MagicMock()
     def setPlaceholderText(self, *args): pass
     def toPlainText(self): return ""

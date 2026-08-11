@@ -32,8 +32,8 @@ jobs:
           cd antigravity-original
           pip install -r requirements.txt
           pyinstaller StealthIt.spec
-          # Zip the resulting dist directory
-          Compress-Archive -Path dist\StealthIt -DestinationPath ..\StealthIt-Original.zip
+          # Zip the resulting executable
+          Compress-Archive -Path dist\StealthIt.exe -DestinationPath ..\StealthIt-Original.zip
 
       - name: Build Claude Opus 5
         run: |
