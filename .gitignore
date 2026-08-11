@@ -25,3 +25,6 @@ build/
 dist/
 *.spec
 video_frames/
+
+# Personal Docs
+antigravity-original/Docs/

@@ -1,0 +1,62 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-antigravity:
+    name: Test Antigravity Original
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          cd antigravity-original
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Run Pytest
+        run: |
+          cd antigravity-original
+          python -m pytest tests/
+
+  test-claude:
+    name: Test Claude Opus 5
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          cd claude-opus-5
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Core Tests
+        run: |
+          cd claude-opus-5
+          python -m tests.test_core
+
+      - name: Run UI Tests
+        run: |
+          cd claude-opus-5
+          python -m tests.test_ui
