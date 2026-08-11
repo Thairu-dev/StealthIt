@@ -141,7 +141,7 @@ AgentRouter is currently giving away **$175 worth of free tokens** to new users!
 ## 💖 Support this Project
 
 If you find this project helpful, consider supporting the development!
-[![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://www.buymeacoffee.com/yourusername)
+[![Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/joethairu)
 
 ---
 *Built with ❤️ by Antigravity & Gemini-3-pro*

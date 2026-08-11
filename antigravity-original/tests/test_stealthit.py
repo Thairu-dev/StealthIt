@@ -3,6 +3,7 @@ import os
 import json
 import unittest
 from unittest.mock import MagicMock, patch, mock_open
+import numpy as np
 
 # --- Global Mock Setup ---
 # We need to define real classes for QThread, QMainWindow, etc. 
@@ -166,6 +167,7 @@ class MockQDialog(MockQWidget):
 class MockQLabel(MockQWidget):
     def __init__(self, text="", parent=None):
         super().__init__(parent)
+    def setPixmap(self, *args): pass
 
 class MockQPushButton(MockQWidget):
     def __init__(self, text="", parent=None):
@@ -294,7 +296,6 @@ module_patches = {
     "ctypes": mock_ctypes,
     "ctypes.wintypes": MagicMock(),
     "qtawesome": MagicMock(),
-    "numpy": MagicMock(),
 }
 
 # Import main within the patch context

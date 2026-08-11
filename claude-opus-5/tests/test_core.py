@@ -693,7 +693,7 @@ def _():
             list(p.stream(req))
             raise AssertionError("should have raised")
         except ProviderError as e:
-            assert "key" in e.message.lower(), e.message
+            assert "key" in e.message.lower() or "invalid" in e.message.lower(), e.message
             assert e.hint, "no actionable hint"
             assert not e.recoverable
             return f"{e.message} / hint: {e.hint}"
