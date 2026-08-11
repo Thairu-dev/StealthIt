@@ -26,7 +26,10 @@ if os.environ.get("GITHUB_ACTIONS"):
     def mock_grab(x=0, y=0, w=200, h=200, *args, **kwargs):
         return Image.new("RGB", (w, h), (0, 0, 0))
     stealthit.native.screen.grab = mock_grab
-    stealthit.native.screen.grab_monitor = lambda m: mock_grab(m.x, m.y, m.width, m.height)
+    def mock_grab_monitor(m=None):
+        m = m or stealthit.native.screen.monitor_under_cursor()
+        return mock_grab(m.x, m.y, m.width, m.height)
+    stealthit.native.screen.grab_monitor = mock_grab_monitor
 
 results: list[tuple[str, bool, str]] = []
 
@@ -183,7 +186,7 @@ def _():
 
     def unauthorised(url, headers, timeout=10.0):
         if url == "https://gw.example/models":
-            raise HttpError("unauthorized client detected", status=401, body="")
+            raise HttpError(status=401, reason="unauthorized client detected", body="")
         raise RuntimeError("unreachable")
 
     http_mod.get_json = unauthorised
@@ -821,6 +824,8 @@ def _():
 
 @check("BitBlt capture returns correct-size RGB image")
 def _():
+    if os.environ.get("GITHUB_ACTIONS"):
+        return "skipped in CI"
     from stealthit.native.screen import grab, monitor_under_cursor
     m = monitor_under_cursor()
     img = grab(m.x, m.y, 320, 240)
@@ -831,6 +836,8 @@ def _():
 
 @check("Full-monitor capture")
 def _():
+    if os.environ.get("GITHUB_ACTIONS"):
+        return "skipped in CI"
     from stealthit.native.screen import grab_monitor, monitor_under_cursor
     m = monitor_under_cursor()
     t0 = time.perf_counter()
@@ -842,6 +849,8 @@ def _():
 
 @check("Capture is not vertically mirrored")
 def _():
+    if os.environ.get("GITHUB_ACTIONS"):
+        return "skipped in CI"
     # A negative biHeight is what makes GDI hand back top-down rows. If that
     # regresses, every screenshot arrives upside down and the AI reads a
     # mirrored screen -- so assert orientation directly against Pillow.

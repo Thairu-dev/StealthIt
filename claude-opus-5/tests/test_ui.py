@@ -28,7 +28,10 @@ if os.environ.get("GITHUB_ACTIONS"):
     def mock_grab(x=0, y=0, w=200, h=200, *args, **kwargs):
         return Image.new("RGB", (w, h), (0, 0, 0))
     stealthit.native.screen.grab = mock_grab
-    stealthit.native.screen.grab_monitor = lambda m: mock_grab(m.x, m.y, m.width, m.height)
+    def mock_grab_monitor(m=None):
+        m = m or stealthit.native.screen.monitor_under_cursor()
+        return mock_grab(m.x, m.y, m.width, m.height)
+    stealthit.native.screen.grab_monitor = mock_grab_monitor
 
 results: list[tuple[str, bool, str]] = []
 

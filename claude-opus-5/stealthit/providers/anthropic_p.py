@@ -41,8 +41,7 @@ class AnthropicProvider(Provider):
                 recoverable=False) from exc
 
         kwargs: dict = {"api_key": self.api_key, "max_retries": 2}
-        if self.using_custom_endpoint:
-            kwargs["base_url"] = self.base_url
+        kwargs["base_url"] = self.base_url
         if self.custom_headers:
             # Escape hatch for gateways needing an extra header. Not required
             # for a stock gateway -- the SDK's own identity is sufficient.
@@ -107,7 +106,7 @@ class AnthropicProvider(Provider):
         except ImportError:
             return super().translate_error(exc)
 
-        if isinstance(exc, anthropic.AuthenticationError):
+        if isinstance(exc, anthropic.AuthenticationError) or (isinstance(exc, TypeError) and "authentication method" in str(exc).lower()):
             return ProviderError(
                 f"{self.label} rejected the API key.",
                 hint="Check the key in Settings -> Providers.",

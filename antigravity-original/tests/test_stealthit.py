@@ -18,7 +18,8 @@ class MockQThread(MockQObject):
         super().__init__(parent)
     def start(self):
         pass
-    def wait(self): pass
+    def wait(self, time=None):
+        pass
     def run(self): pass
 
 class MockQWidget(MockQObject):
@@ -161,6 +162,18 @@ class MockQMainWindow(MockQWidget):
 class MockQFrame(MockQWidget):
     pass
 
+class MockLayout(MockQObject):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+    def addWidget(self, *args): pass
+    def addLayout(self, *args): pass
+    def addStretch(self, *args): pass
+    def setContentsMargins(self, *args): pass
+    def setSpacing(self, *args): pass
+    def count(self): return 0
+    def takeAt(self, index): return None
+
+
 class MockQDialog(MockQWidget):
     pass
 
@@ -243,6 +256,7 @@ mock_pyside.QComboBox = MockQComboBox
 mock_pyside.QTabWidget = MockQTabWidget
 mock_pyside.QScrollArea = MockQScrollArea
 mock_pyside.Signal = MockSignalDescriptor
+mock_pyside.QScroller = MagicMock()
 
 # Other Qt classes can remain MagicMocks if they are not inherited from
 mock_pyside.QTimer = MagicMock()
@@ -261,9 +275,9 @@ mock_pyside.QBrush = MagicMock()
 mock_pyside.QPen = MagicMock()
 mock_pyside.QClipboard = MagicMock()
 mock_pyside.QSizePolicy = MagicMock()
-mock_pyside.QVBoxLayout = MagicMock()
-mock_pyside.QHBoxLayout = MagicMock()
-mock_pyside.QFormLayout = MagicMock()
+mock_pyside.QVBoxLayout = MockLayout
+mock_pyside.QHBoxLayout = MockLayout
+mock_pyside.QFormLayout = MockLayout
 mock_pyside.QDialogButtonBox = MagicMock()
 mock_pyside.QMenu = MagicMock()
 mock_pyside.QMessageBox = MagicMock()
@@ -276,6 +290,10 @@ mock_pyside.Qt = MagicMock()
 mock_sd = MagicMock()
 mock_genai = MagicMock()
 mock_ctypes = MagicMock()
+mock_ctypes.wintypes = MagicMock()
+
+mock_qta = MagicMock()
+sys.modules["qtawesome"] = mock_qta
 mock_pil = MagicMock()
 
 # Configure specific mocks
@@ -293,8 +311,6 @@ module_patches = {
     "PIL": mock_pil,
     "PIL.Image": mock_pil,
     "PIL.ImageGrab": mock_pil,
-    "ctypes": mock_ctypes,
-    "ctypes.wintypes": MagicMock(),
     "qtawesome": MagicMock(),
 }
 
@@ -394,12 +410,13 @@ class TestStealthIt(unittest.TestCase):
         main.QTimer.singleShot.assert_called_with(0, window.take_screenshot)
         window.collapse_window.assert_not_called()
 
-    def test_window_affinity(self):
+    @patch('main.user32.SetWindowDisplayAffinity')
+    def test_window_affinity(self, mock_set_affinity):
         """Test that SetWindowDisplayAffinity is called upon initialization."""
         window = main.MainWindow()
         
-        mock_ctypes.windll.user32.SetWindowDisplayAffinity.assert_called()
-        args = mock_ctypes.windll.user32.SetWindowDisplayAffinity.call_args[0]
+        mock_set_affinity.assert_called()
+        args = mock_set_affinity.call_args[0]
         self.assertEqual(args[1], 0x00000011)
 
     def test_record_button_streaming(self):
