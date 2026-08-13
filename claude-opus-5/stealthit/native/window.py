@@ -213,9 +213,9 @@ class StealthController:
                        opacity: int) -> bool:
         """Apply the backdrop for the current settings, blurred or not."""
         if acrylic:
-            # The Win11 system backdrop ignores our tint and opacity, so the
-            # accent policy is applied second and wins.
-            self.apply_system_backdrop()
+            # The Win11 system backdrop ignores our tint and opacity, and on 
+            # some builds overrides the accent policy, causing a light background.
+            # self.apply_system_backdrop()
             return self.apply_acrylic(tint, opacity)
         return self.apply_tint_without_blur(tint, opacity)
 
@@ -228,6 +228,14 @@ class StealthController:
         val = ctypes.c_int(DWMSBT_TRANSIENTWINDOW)
         hr = dwmapi.DwmSetWindowAttribute(
             self.hwnd, DWMWA_SYSTEMBACKDROP_TYPE,
+            ctypes.byref(val), ctypes.sizeof(val))
+        return hr == 0
+
+    def remove_border(self) -> bool:
+        """Removes the 1px DWM window border on Win11."""
+        val = ctypes.c_int(0xFFFFFFFE)  # DWMWA_COLOR_NONE
+        hr = dwmapi.DwmSetWindowAttribute(
+            self.hwnd, 34, # DWMWA_BORDER_COLOR
             ctypes.byref(val), ctypes.sizeof(val))
         return hr == 0
 
@@ -263,28 +271,28 @@ class StealthController:
         """
         self.apply_dark_mode()
         self.apply_rounded_corners()
+        self.remove_border()
 
         if stealth:
-            # When stealth is active, DWM accent policies (acrylic blur,
-            # transparent gradient) create a compositor-owned layer that the OS
-            # renders as a solid black rectangle when the window is excluded
-            # from capture. Clearing the accent policy leaves the window purely
-            # transparent via Qt's WA_TranslucentBackground and CSS rgba()
-            # backgrounds, which WDA_EXCLUDEFROMCAPTURE can make fully
-            # invisible -- exactly how the original version worked.
-            self.clear_acrylic()
+            # Stealth needs the window excluded from capture. Heavy DWM layers
+            # (acrylic blur) render as solid black in that mode, so we avoid
+            # them. But clearing the accent entirely (AccentState=0) leaves
+            # DWM with no composition policy, which causes a white flash on
+            # launch before Qt's CSS painting runs. Instead we set a fully
+            # transparent gradient: DWM owns composition (no white default)
+            # but the layer is invisible, letting CSS rgba() backgrounds
+            # provide the dark translucent look.
+            self.apply_tint_without_blur(tint, 0)
         elif acrylic:
-            # The Win11 system backdrop ignores our tint and opacity, so it
-            # is only useful when the user wants the stock look. The accent
-            # policy is what actually honours the opacity slider, so it is
-            # applied second and wins.
-            self.apply_system_backdrop()
+            # The Win11 system backdrop ignores our tint and opacity, and on 
+            # some builds overrides the accent policy, causing a light background.
+            # self.apply_system_backdrop()
             self.apply_acrylic(tint, opacity)
         else:
             # Still honour opacity -- just without the blur.
             self.apply_tint_without_blur(tint, opacity)
 
-        hidden = self.set_capture_exclusion(stealth) if stealth else False
+        hidden = self.set_capture_exclusion(stealth)
         no_taskbar = self.set_tool_window(True)
         no_focus = self.set_no_activate(no_activate)
 
@@ -299,7 +307,7 @@ class StealthController:
             problems.append("could not suppress focus stealing")
 
         return StealthReport(
-            hidden_from_capture=hidden,
+            hidden_from_capture=hidden and stealth,
             excluded_from_taskbar=no_taskbar,
             never_takes_focus=no_focus,
             detail="; ".join(problems))

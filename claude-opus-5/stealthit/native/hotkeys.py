@@ -58,7 +58,7 @@ class HotkeyParseError(ValueError):
     pass
 
 
-def parse_chord(chord: str) -> tuple[int, int]:
+def parse_chord(chord: str, allow_repeat: bool = False) -> tuple[int, int]:
     """
     "ctrl+shift+enter" -> (MOD_CONTROL|MOD_SHIFT|MOD_NOREPEAT, VK_RETURN).
 
@@ -82,7 +82,9 @@ def parse_chord(chord: str) -> tuple[int, int]:
             raise HotkeyParseError(f"unknown key {part!r} in {chord!r}")
     if key is None:
         raise HotkeyParseError(f"{chord!r} has no non-modifier key")
-    return mods | MOD_NOREPEAT, key
+    if not allow_repeat:
+        mods |= MOD_NOREPEAT
+    return mods, key
 
 
 @dataclass
@@ -110,9 +112,10 @@ class HotkeyManager:
 
     def register(self, action: str, chord: str,
                  callback: Callable[[], None],
-                 description: str = "") -> Binding:
+                 description: str = "",
+                 allow_repeat: bool = False) -> Binding:
         try:
-            mods, vk = parse_chord(chord)
+            mods, vk = parse_chord(chord, allow_repeat=allow_repeat)
         except HotkeyParseError as e:
             b = Binding(action, chord, callback, description, error=str(e))
             return b

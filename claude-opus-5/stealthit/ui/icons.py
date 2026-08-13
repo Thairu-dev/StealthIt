@@ -149,6 +149,16 @@ def _edit(p: QPainterPath) -> None:
     p.closeSubpath()
 
 
+def _eye(p: QPainterPath) -> None:
+    """Stealth disabled: the app is visible to screen sharing."""
+    p.moveTo(2, 12)
+    p.cubicTo(5, 6, 9, 4, 12, 4)
+    p.cubicTo(15, 4, 19, 6, 22, 12)
+    p.cubicTo(19, 18, 15, 20, 12, 20)
+    p.cubicTo(9, 20, 5, 18, 2, 12)
+    p.addEllipse(QPointF(12, 12), 3.2, 3.2)
+
+
 def _eye_off(p: QPainterPath) -> None:
     """Stealth: the app is watching, nothing is watching the app."""
     p.moveTo(2, 12)
@@ -229,6 +239,7 @@ _BUILDERS = {
     "plus": _plus,
     "copy": _copy,
     "edit": _edit,
+    "eye": _eye,
     "eye-off": _eye_off,
     "layers": _layers,
     "message": _message,

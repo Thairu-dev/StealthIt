@@ -34,7 +34,7 @@ from .chips import ChipComboBox
 from .engine import AIEngine, looks_like_question
 from .region_select import RegionSelector
 from .theme import MOTION, PALETTE, SPACE, TYPE, stylesheet
-from .widgets import (AutoGrowTextEdit, LevelMeter, MessageBubble, StatusDot,
+from .widgets import (AutoGrowTextEdit, LevelMeter, MessageBubble,
                       ThinkingIndicator, Toast, TranscriptLine)
 
 COMPACT_HEIGHT = 62
@@ -177,16 +177,11 @@ class Overlay(QMainWindow):
             tint=tuple(self.settings.appearance.tint),
             opacity=self.settings.appearance.opacity)
         self._stealth_report = report
-        self.status_dot.set_state("stealth" if report.fully_stealthed
-                                  else "error")
-        self.status_dot.setToolTip(
-            "Hidden from screen capture and recording"
-            if report.fully_stealthed
-            else f"Stealth incomplete: {report.detail}")
         if not report.fully_stealthed and self.settings.behaviour.stealth:
             self.toast.show_message(
                 f"Stealth is not fully active. {report.detail}",
                 kind="error", timeout=9000)
+        self._update_stealth_icon()
 
     def showEvent(self, event) -> None:
         super().showEvent(event)
@@ -235,8 +230,9 @@ class Overlay(QMainWindow):
 
     # ----------------------------------------------------------------- ui tree
     def _build_ui(self) -> None:
-        root = QWidget()
+        root = QFrame()
         root.setObjectName("Root")
+        root.setAttribute(Qt.WA_TranslucentBackground, True)
         self.setCentralWidget(root)
         outer = QVBoxLayout(root)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -282,15 +278,25 @@ class Overlay(QMainWindow):
         layout.setContentsMargins(SPACE.md, 0, SPACE.sm, 0)
         layout.setSpacing(SPACE.xs)
 
-        self.status_dot = StatusDot()
-        self.status_dot.setToolTip("Stealth status")
-        layout.addWidget(self.status_dot)
-        layout.addSpacing(SPACE.sm)
+
+
+        self.btn_stealth = self._icon_button(
+            "eye-off" if self.settings.behaviour.stealth else "eye",
+            "Toggle Stealth Mode")
+        self.btn_stealth.clicked.connect(self.toggle_stealth_live)
+        layout.addWidget(self.btn_stealth)
 
         self.btn_listen = self._icon_button(
             "mic", "Listen to this call  (Ctrl+Shift+L)")
         self.btn_listen.clicked.connect(self.toggle_listening)
         layout.addWidget(self.btn_listen)
+
+        self.btn_auto_answer = self._icon_button(
+            "message", "Auto-answer questions (Copilot)")
+        self.btn_auto_answer.setCheckable(True)
+        self.btn_auto_answer.setChecked(self.settings.behaviour.auto_suggest)
+        self.btn_auto_answer.clicked.connect(self.toggle_auto_answer)
+        layout.addWidget(self.btn_auto_answer)
 
         self.level_meter = LevelMeter()
         self.level_meter.hide()
@@ -364,6 +370,27 @@ class Overlay(QMainWindow):
                          colour: str = "") -> None:
         btn._icon_name = name
         btn.setIcon(icons.icon(name, 18, colour or PALETTE.text_muted))
+
+    def _update_stealth_icon(self) -> None:
+        """Sync the stealth toggle button icon and tooltip to the current state."""
+        if not hasattr(self, "btn_stealth"):
+            return
+        active = self._stealth_report.fully_stealthed
+        icon = "eye-off" if active else "eye"
+        colour = PALETTE.success if active else PALETTE.text_muted
+        self._set_button_icon(self.btn_stealth, icon, colour)
+        if active:
+            self.btn_stealth.setToolTip(
+                "🟢 Stealth Mode: ON\n"
+                "Hidden from screen recordings, screenshots,\n"
+                "and screen sharing (OBS, Zoom, Teams, etc.)\n\n"
+                "Click to disable stealth")
+        else:
+            self.btn_stealth.setToolTip(
+                "⚠️ Stealth Mode: OFF\n"
+                "This window IS visible in screen recordings,\n"
+                "screenshots, and screen sharing apps.\n\n"
+                "Click to enable stealth")
 
     def _build_answer_pane(self) -> QWidget:
         wrap = QWidget()
@@ -538,8 +565,10 @@ class Overlay(QMainWindow):
         for action, callback in actions.items():
             chord = self.settings.keymap.get(
                 action, DEFAULT_KEYMAP[action][0])
-            binding = self.hotkeys.register(
-                action, chord, callback, DEFAULT_KEYMAP[action][1])
+            allow_repeat = action.startswith("move_")
+            binding = self.hotkeys.register(action, chord, callback,
+                                            DEFAULT_KEYMAP[action][1],
+                                            allow_repeat=allow_repeat)
             if not binding.registered:
                 failures.append(f"{chord} ({binding.error})")
         if failures:
@@ -1019,13 +1048,9 @@ class Overlay(QMainWindow):
     def _on_engine_state(self, state: str) -> None:
         if state == "thinking":
             self.thinking.start()
-            self.status_dot.set_state("thinking")
             QTimer.singleShot(16, self._scroll_answers_to_bottom)
         else:
             self.thinking.stop()
-            self.status_dot.set_state(
-                "listening" if self.listening else
-                ("stealth" if self._stealth_report.fully_stealthed else "idle"))
 
     def new_session(self) -> None:
         if self.settings.behaviour.save_sessions:
@@ -1084,7 +1109,7 @@ class Overlay(QMainWindow):
         self.listening = True
         self._utterance_pump.start(180)
         self.set_listening_appearance(True)
-        self.status_dot.set_state("listening")
+
         self.level_meter.start()
         self.expand()
         self.transcript_pane.show()
@@ -1119,8 +1144,7 @@ class Overlay(QMainWindow):
             self._clear_partial(speaker)
         self.set_listening_appearance(False)
         self.level_meter.stop()
-        self.status_dot.set_state(
-            "stealth" if self._stealth_report.fully_stealthed else "idle")
+
         if self.settings.behaviour.save_sessions:
             self.sessions.save(self.session)
 
@@ -1299,6 +1323,15 @@ class Overlay(QMainWindow):
         dialog.applied.connect(self._on_settings_applied)
         dialog.exec()
 
+    def toggle_stealth_live(self) -> None:
+        self.settings.behaviour.stealth = not self.settings.behaviour.stealth
+        self.config.save()
+        self._on_settings_applied()
+
+    def toggle_auto_answer(self) -> None:
+        self.settings.behaviour.auto_suggest = self.btn_auto_answer.isChecked()
+        self.config.save()
+
     def _on_settings_applied(self) -> None:
         """
         Apply changed settings immediately.
@@ -1322,12 +1355,14 @@ class Overlay(QMainWindow):
             self.resize(target_w, target_h)
             self._keep_on_screen()
 
-        self.stealth.apply(
+        report = self.stealth.apply(
             stealth=self.settings.behaviour.stealth,
             acrylic=appearance.acrylic,
             tint=tuple(appearance.tint),
             opacity=appearance.opacity,
             no_activate=not self._typing)
+        self._stealth_report = report
+        self._update_stealth_icon()
 
         # Audio settings that can change without a restart.
         self.audio.threshold = self.settings.audio.silence_threshold
