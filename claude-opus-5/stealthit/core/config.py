@@ -138,9 +138,10 @@ KNOWN_MODELS: dict[str, list[dict[str, Any]]] = {
         {"id": "gemini-2.0-flash", "label": "Gemini 2.0 Flash", "vision": True},
     ],
     "anthropic": [
-        {"id": "claude-opus-4-5", "label": "Claude Opus 4.5", "vision": True},
-        {"id": "claude-sonnet-4-5", "label": "Claude Sonnet 4.5", "vision": True},
-        {"id": "claude-haiku-4-5", "label": "Claude Haiku 4.5", "vision": True},
+        {"id": "claude-3-7-sonnet-latest", "label": "Claude 3.7 Sonnet", "vision": True},
+        {"id": "claude-3-5-sonnet-latest", "label": "Claude 3.5 Sonnet", "vision": True},
+        {"id": "claude-3-5-haiku-latest", "label": "Claude 3.5 Haiku", "vision": True},
+        {"id": "claude-3-opus-latest", "label": "Claude 3 Opus", "vision": True},
     ],
     "openai": [
         {"id": "gpt-4o", "label": "GPT-4o", "vision": True},

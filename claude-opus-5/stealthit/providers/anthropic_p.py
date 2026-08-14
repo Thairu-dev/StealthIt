@@ -101,10 +101,73 @@ class AnthropicProvider(Provider):
 
     def translate_error(self, exc: Exception) -> ProviderError:
         """Map the SDK's typed exceptions before falling back to text matching."""
+        import json
+        import re
+
         try:
             import anthropic
         except ImportError:
             return super().translate_error(exc)
+
+        def _extract_msg(val) -> str:
+            if isinstance(val, dict):
+                inner = val.get("error")
+                if inner and inner != val:
+                    res = _extract_msg(inner)
+                    if res:
+                        return res
+                return _extract_msg(val.get("message") or "")
+            if isinstance(val, str):
+                s = val.strip()
+                if (s.startswith("{") and s.endswith("}")) or (s.startswith("[") and s.endswith("]")):
+                    import ast
+                    try:
+                        parsed = ast.literal_eval(s)
+                        if isinstance(parsed, (dict, list)):
+                            res = _extract_msg(parsed)
+                            if res:
+                                return res
+                    except Exception:
+                        pass
+                    try:
+                        import json
+                        parsed = json.loads(s)
+                        if isinstance(parsed, (dict, list)):
+                            res = _extract_msg(parsed)
+                            if res:
+                                return res
+                    except Exception:
+                        pass
+                return s
+            return str(val)
+
+        # Extract nested error message from response or exception string if present
+        msg = ""
+        if hasattr(exc, "response") and exc.response is not None:
+            try:
+                data = exc.response.json()
+                msg = _extract_msg(data)
+            except Exception:
+                pass
+
+        if not msg:
+            msg = _extract_msg(str(exc))
+
+        if msg:
+            if any(s in msg for s in ("无权访问", "not entitled", "permission", "not allowed", "unauthorized")):
+                return ProviderError(
+                    f"Access denied: {msg}",
+                    hint=f"Your API key is not entitled to this model on {self.base_url}. Choose a model supported by your key (e.g. from Settings -> Providers).",
+                    recoverable=False)
+            if any(s in msg.lower() for s in ("model not found", "does not exist", "no such model")):
+                return ProviderError(
+                    f"{self.label} error: {msg}",
+                    hint="Check the model name or pick an available model from Settings -> Providers -> Browse models.",
+                    recoverable=False)
+            return ProviderError(
+                f"{self.label} error: {msg}",
+                hint=f"Check model and permissions on {self.base_url}.",
+                recoverable=False)
 
         if isinstance(exc, anthropic.AuthenticationError) or (isinstance(exc, TypeError) and "authentication method" in str(exc).lower()):
             return ProviderError(
