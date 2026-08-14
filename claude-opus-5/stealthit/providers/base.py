@@ -263,8 +263,19 @@ class Provider(ABC):
                 self._resolved_base_url = candidate
                 return candidate
 
-        # Nothing answered; keep what the user configured so the eventual
-        # error names their URL rather than one we invented.
+        # Nothing answered. If the user configured a bare origin (no path)
+        # we append the provider's default path (e.g. /v1). If they configured
+        # an explicit path, we respect it so the eventual error names their URL
+        # rather than one we invented.
+        import urllib.parse
+        parsed = urllib.parse.urlparse(self.base_url)
+        if parsed.path in ("", "/"):
+            default_path = urllib.parse.urlparse(self.default_base_url).path
+            if default_path and default_path != "/":
+                fallback = self.base_url.rstrip("/") + default_path
+                self._resolved_base_url = fallback
+                return fallback
+
         self._resolved_base_url = self.base_url
         return self.base_url
 

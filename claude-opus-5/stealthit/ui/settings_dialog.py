@@ -48,7 +48,7 @@ def _hint(text: str) -> QLabel:
     label = QLabel(text)
     label.setWordWrap(True)
     label.setStyleSheet(
-        f"color:{PALETTE.text_faint};font-size:{TYPE.size_xs}px;")
+        f"color:{PALETTE.text_faint};font-size:{TYPE.size_xs/TYPE.size_md:.2f}em;")
     return label
 
 
@@ -203,7 +203,7 @@ class SettingsDialog(QDialog):
             header.addWidget(QLabel(PROVIDER_LABELS[name]))
             header.addStretch()
             status = QLabel()
-            status.setStyleSheet(f"font-size:{TYPE.size_xs}px;")
+            status.setStyleSheet(f"font-size:{TYPE.size_xs/TYPE.size_md:.2f}em;")
             self.key_status[name] = status
             header.addWidget(status)
             link = QPushButton("Get a key")
@@ -306,7 +306,7 @@ class SettingsDialog(QDialog):
         self.headers_field.setPlainText(
             self._format_headers(cfg.custom_headers))
         self.base_url_hint.setStyleSheet(
-            f"color:{PALETTE.text_faint};font-size:{TYPE.size_xs}px;")
+            f"color:{PALETTE.text_faint};font-size:{TYPE.size_xs/TYPE.size_md:.2f}em;")
         if not is_custom:
             self._update_base_url_hint(name)
         else:
@@ -341,13 +341,13 @@ class SettingsDialog(QDialog):
             if source == "not set":
                 label.setText("not set")
                 label.setStyleSheet(
-                    f"color:{PALETTE.text_faint};font-size:{TYPE.size_xs}px;")
+                    f"color:{PALETTE.text_faint};font-size:{TYPE.size_xs/TYPE.size_md:.2f}em;")
             else:
                 # A tick plus the source, so "is my key saved?" is answerable
                 # at a glance rather than by trial and error.
                 label.setText(f"saved ({source})")
                 label.setStyleSheet(
-                    f"color:{PALETTE.success};font-size:{TYPE.size_xs}px;")
+                    f"color:{PALETTE.success};font-size:{TYPE.size_xs/TYPE.size_md:.2f}em;")
 
     def _base_url_changed(self) -> None:
         """Store and echo back the normalised URL as the user types it."""
@@ -460,7 +460,7 @@ class SettingsDialog(QDialog):
     def _set_endpoint_status(self, text: str, colour: str) -> None:
         self.base_url_hint.setText(text)
         self.base_url_hint.setStyleSheet(
-            f"color:{colour};font-size:{TYPE.size_xs}px;")
+            f"color:{colour};font-size:{TYPE.size_xs/TYPE.size_md:.2f}em;")
 
     def _browse_models(self) -> None:
         """
@@ -547,12 +547,12 @@ class SettingsDialog(QDialog):
                    f"{', '.join(m for m in models if 'llava' in m or 'vision' in m) or 'none'}"
                    if models else ""))
             self.ollama_status.setStyleSheet(
-                f"color:{PALETTE.success};font-size:{TYPE.size_xs}px;")
+                f"color:{PALETTE.success};font-size:{TYPE.size_xs/TYPE.size_md:.2f}em;")
         else:
             self.ollama_status.setText(
                 f"Not reachable at {host}. Is Ollama running?")
             self.ollama_status.setStyleSheet(
-                f"color:{PALETTE.danger};font-size:{TYPE.size_xs}px;")
+                f"color:{PALETTE.danger};font-size:{TYPE.size_xs/TYPE.size_md:.2f}em;")
 
     # ---------------------------------------------------- custom providers
     @staticmethod
@@ -917,7 +917,7 @@ class SettingsDialog(QDialog):
         layout.addWidget(self.opacity_label)
         self._update_opacity_label(self.settings.appearance.opacity)
 
-        layout.addWidget(_section("Type"))
+        layout.addWidget(_section("Font Size"))
         self.font_spin = QSpinBox()
         self.font_spin.setRange(10, 20)
         self.font_spin.setSuffix(" px")

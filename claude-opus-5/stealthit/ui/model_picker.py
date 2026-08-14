@@ -102,7 +102,7 @@ class ModelPicker(QDialog):
         filters.addStretch()
         self.count_label = QLabel()
         self.count_label.setStyleSheet(
-            f"color:{PALETTE.text_faint};font-size:{TYPE.size_xs}px;")
+            f"color:{PALETTE.text_faint};font-size:{TYPE.size_xs/TYPE.size_md:.2f}em;")
         filters.addWidget(self.count_label)
         layout.addLayout(filters)
 
@@ -121,7 +121,7 @@ class ModelPicker(QDialog):
         self.status = QLabel("Loading models...")
         self.status.setWordWrap(True)
         self.status.setStyleSheet(
-            f"color:{PALETTE.text_faint};font-size:{TYPE.size_xs}px;")
+            f"color:{PALETTE.text_faint};font-size:{TYPE.size_xs/TYPE.size_md:.2f}em;")
         layout.addWidget(self.status)
 
         buttons = QHBoxLayout()
@@ -158,7 +158,7 @@ class ModelPicker(QDialog):
     def _on_failed(self, message: str) -> None:
         self.status.setText(message)
         self.status.setStyleSheet(
-            f"color:{PALETTE.danger};font-size:{TYPE.size_xs}px;")
+            f"color:{PALETTE.danger};font-size:{TYPE.size_xs/TYPE.size_md:.2f}em;")
 
     # --------------------------------------------------------------- filters
     def _apply_filters(self) -> None:

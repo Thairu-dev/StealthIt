@@ -271,7 +271,7 @@ class CodeBlockBar(QWidget):
         label = QLabel(language or "code")
         label.setStyleSheet(
             f"color:{PALETTE.text_faint};font-family:{TYPE.mono};"
-            f"font-size:{TYPE.size_xs}px;background:transparent;")
+            f"font-size:{TYPE.size_xs/TYPE.size_md:.2f}em;background:transparent;")
         layout.addWidget(label)
         layout.addStretch()
 
@@ -281,7 +281,7 @@ class CodeBlockBar(QWidget):
         self.button.setCursor(Qt.PointingHandCursor)
         self.button.setStyleSheet(
             f"QPushButton{{color:{PALETTE.text_faint};background:transparent;"
-            f"border:none;font-size:{TYPE.size_xs}px;padding:2px 6px;}}"
+            f"border:none;font-size:{TYPE.size_xs/TYPE.size_md:.2f}em;padding:2px 6px;}}"
             f"QPushButton:hover{{color:{PALETTE.text};}}")
         self.button.clicked.connect(self._copy)
         layout.addWidget(self.button)
@@ -310,12 +310,14 @@ class MessageBubble(QFrame):
         self.is_user = is_user
         self._raw = text
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        self.setMinimumWidth(0)
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(2)
 
         self.body = QTextBrowser()
+        self.body.setMinimumWidth(0)
         self.body.setOpenExternalLinks(True)
         self.body.setFrameShape(QFrame.NoFrame)
         self.body.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -331,8 +333,10 @@ class MessageBubble(QFrame):
                 f"color:{PALETTE.text};}}")
         else:
             self.body.setStyleSheet(
-                f"QTextBrowser{{background:transparent;border:none;"
-                f"padding:2px 0;color:{PALETTE.text};}}")
+                f"QTextBrowser{{background:{PALETTE.bubble_ai};"
+                f"border:1px solid {PALETTE.bubble_ai_border};"
+                f"border-radius:{SPACE.radius_md}px;padding:9px 13px;"
+                f"color:{PALETTE.text};}}")
 
         outer.addWidget(self.body)
         
@@ -349,7 +353,7 @@ class MessageBubble(QFrame):
             self.btn_edit.setCursor(Qt.PointingHandCursor)
             self.btn_edit.setStyleSheet(
                 f"QPushButton{{color:{PALETTE.text_faint};background:transparent;"
-                f"border:none;font-size:{TYPE.size_xs}px;padding:2px 6px;}}"
+                f"border:none;font-size:{TYPE.size_xs/TYPE.size_md:.2f}em;padding:2px 6px;}}"
                 f"QPushButton:hover{{color:{PALETTE.text};}}")
             self.btn_edit.clicked.connect(self._request_edit)
             self.actions_layout.addWidget(self.btn_edit)
@@ -360,7 +364,7 @@ class MessageBubble(QFrame):
         self.btn_copy.setCursor(Qt.PointingHandCursor)
         self.btn_copy.setStyleSheet(
             f"QPushButton{{color:{PALETTE.text_faint};background:transparent;"
-            f"border:none;font-size:{TYPE.size_xs}px;padding:2px 6px;}}"
+            f"border:none;font-size:{TYPE.size_xs/TYPE.size_md:.2f}em;padding:2px 6px;}}"
             f"QPushButton:hover{{color:{PALETTE.text};}}")
         self.btn_copy.clicked.connect(self._copy_text)
         self.actions_layout.addWidget(self.btn_copy)
@@ -423,8 +427,9 @@ class MessageBubble(QFrame):
     def _fit(self) -> None:
         """Size the browser to its document so the bubble has no inner scroll."""
         doc = self.body.document()
-        width = max(120, self.width() or 480)
-        doc.setTextWidth(width - 26)
+        parent_w = self.parent().width() if self.parent() else 360
+        width = self.width() if self.width() > 50 else parent_w
+        doc.setTextWidth(max(10, width - 26))
         self.body.setFixedHeight(int(doc.size().height()) + 20)
 
     def resizeEvent(self, event) -> None:
@@ -460,7 +465,7 @@ class TranscriptLine(QWidget):
         tag.setFixedWidth(38)
         tag.setAlignment(Qt.AlignRight | Qt.AlignTop)
         tag.setStyleSheet(
-            f"color:{colour};font-size:{TYPE.size_xs}px;font-weight:700;"
+            f"color:{colour};font-size:{TYPE.size_xs/TYPE.size_md:.2f}em;font-weight:700;"
             f"background:transparent;"
             + ("opacity:0.6;" if partial else ""))
         layout.addWidget(tag)
@@ -470,7 +475,7 @@ class TranscriptLine(QWidget):
         self.label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.label.setStyleSheet(
             f"color:{PALETTE.text_faint if partial else PALETTE.text_muted};"
-            f"font-size:{TYPE.size_sm}px;background:transparent;"
+            f"font-size:{TYPE.size_sm/TYPE.size_md:.2f}em;background:transparent;"
             + ("font-style:italic;" if partial else ""))
         layout.addWidget(self.label, 1)
 
@@ -527,7 +532,7 @@ class Toast(QFrame):
             f"border:1px solid {PALETTE.border_strong};"
             f"border-radius:{SPACE.radius_md}px;}}")
         self.label.setStyleSheet(
-            f"color:{colour};font-size:{TYPE.size_sm}px;background:transparent;")
+            f"color:{colour};font-size:{TYPE.size_sm/TYPE.size_md:.2f}em;background:transparent;")
 
         # Track the connection rather than calling disconnect() blindly --
         # disconnecting a signal with no connections emits a RuntimeWarning
@@ -539,7 +544,7 @@ class Toast(QFrame):
             self.action.setText(action_text)
             self.action.setStyleSheet(
                 f"QPushButton{{color:{PALETTE.accent};background:transparent;"
-                f"border:none;font-size:{TYPE.size_sm}px;font-weight:600;}}"
+                f"border:none;font-size:{TYPE.size_sm/TYPE.size_md:.2f}em;font-weight:600;}}"
                 f"QPushButton:hover{{color:{PALETTE.accent_hover};}}")
             self.action.clicked.connect(action_cb)
             self._action_connected = True

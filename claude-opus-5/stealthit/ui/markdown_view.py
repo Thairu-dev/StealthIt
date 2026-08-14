@@ -38,6 +38,8 @@ _ULIST = re.compile(r"^[ \t]*[-*+]\s+(.*)$")
 _OLIST = re.compile(r"^[ \t]*(\d+)[.)]\s+(.*)$")
 _QUOTE = re.compile(r"^>\s?(.*)$")
 _HR = re.compile(r"^[ \t]*([-*_])(?:[ \t]*\1){2,}[ \t]*$")
+_MATH_BLOCK = re.compile(r"\\\[(.*?)\\\]")
+_MATH_INLINE = re.compile(r"\\\((.*?)\\\)")
 
 # Monokai-ish, tuned to sit on the acrylic surface without vibrating.
 _FORMATTER = HtmlFormatter(nowrap=True, style="monokai")
@@ -77,7 +79,15 @@ def _inline(text: str) -> str:
         spans.append(m.group(1))
         return f"\x00{len(spans) - 1}\x00"
 
+    math_spans: list[str] = []
+
+    def _stash_math(m: re.Match) -> str:
+        math_spans.append(m.group(1))
+        return f"\x01{len(math_spans) - 1}\x01"
+
     out = _INLINE_CODE.sub(_stash, out)
+    out = _MATH_BLOCK.sub(_stash_math, out)
+    out = _MATH_INLINE.sub(_stash_math, out)
     out = _LINK.sub(
         rf'<a href="\2" style="color:{PALETTE.accent};'
         r'text-decoration:none">\1</a>', out)
@@ -87,12 +97,18 @@ def _inline(text: str) -> str:
 
     def _restore(m: re.Match) -> str:
         code = spans[int(m.group(1))]
-        return (f'<code style="background:{PALETTE.code_bg};'
-                f'font-family:{TYPE.mono};font-size:{TYPE.size_sm}px;'
+        return (f'<code style="word-wrap:break-word;background:{PALETTE.code_bg};'
+                f'font-family:{TYPE.mono};font-size:{TYPE.size_sm/TYPE.size_md:.2f}em;'
                 f'padding:1px 5px;border-radius:4px;'
                 f'color:{PALETTE.accent_hover}">{code}</code>')
 
-    return re.sub(r"\x00(\d+)\x00", _restore, out)
+    out = re.sub(r"\x00(\d+)\x00", _restore, out)
+
+    def _restore_math(m: re.Match) -> str:
+        math_content = math_spans[int(m.group(1))]
+        return f"<i>{math_content}</i>"
+
+    return re.sub(r"\x01(\d+)\x01", _restore_math, out)
 
 
 def render(md: str, streaming: bool = False) -> str:
@@ -139,13 +155,13 @@ def render(md: str, streaming: bool = False) -> str:
             label = ""
             if lang:
                 label = (f'<div style="color:{p.text_faint};'
-                         f'font-size:{t.size_xs}px;font-family:{t.mono};'
+                         f'font-size:{t.size_xs/t.size_md:.2f}em;font-family:{t.mono};'
                          f'padding:0 0 4px 2px">{html.escape(lang)}</div>')
             blocks.append(
                 f'{label}<div style="background:{p.code_bg};'
                 f'border:1px solid {p.code_border};border-radius:8px;'
                 f'padding:10px 12px;margin:6px 0">'
-                f'<pre style="font-family:{t.mono};font-size:{t.size_sm}px;'
+                f'<pre style="white-space:pre-wrap;word-wrap:break-word;font-family:{t.mono};font-size:{t.size_sm/t.size_md:.2f}em;'
                 f'margin:0;color:#F8F8F2">{_highlight_code(code, lang)}</pre>'
                 f'</div>')
             continue
@@ -169,7 +185,7 @@ def render(md: str, streaming: bool = False) -> str:
             level = len(heading.group(1))
             size = max(t.size_md, t.size_xl - (level - 1) * 2)
             blocks.append(
-                f'<div style="font-size:{size}px;font-weight:600;'
+                f'<div style="font-size:{size/t.size_md:.2f}em;font-weight:600;'
                 f'color:{p.text};margin:10px 0 4px">'
                 f'{_inline(heading.group(2))}</div>')
             i += 1
@@ -232,7 +248,7 @@ def render(md: str, streaming: bool = False) -> str:
             f'{_inline(" ".join(para))}</div>')
 
     close_list()
-    return (f'<div style="font-family:{t.ui};font-size:{t.size_md}px;'
+    return (f'<div style="font-family:{t.ui};'
             f'color:{p.text}">' + "".join(blocks) + "</div>")
 
 

@@ -87,7 +87,7 @@ class CommandPalette(QDialog):
 
         hint = QLabel("Enter to run    Esc to close")
         hint.setStyleSheet(
-            f"color:{PALETTE.text_faint};font-size:{TYPE.size_xs}px;"
+            f"color:{PALETTE.text_faint};font-size:{TYPE.size_xs/TYPE.size_md:.2f}em;"
             f"padding-top:2px;")
         inner.addWidget(hint)
 

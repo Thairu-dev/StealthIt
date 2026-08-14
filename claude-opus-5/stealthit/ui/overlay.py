@@ -188,45 +188,31 @@ class Overlay(QMainWindow):
         if not hasattr(self, "stealth"):
             return
 
-        # Re-assert the backdrop on every show, unconditionally -- but only
-        # when stealth is off.  DWM accent policies (acrylic, transparent
-        # gradient) create a compositor-owned layer that the OS renders as a
-        # solid black rectangle when the window is excluded from capture.
-        # With stealth on, the dark translucent look comes from CSS rgba()
-        # backgrounds on a WA_TranslucentBackground window instead.
-        if not self.settings.behaviour.stealth:
-            self.stealth.apply_backdrop(
-                self.settings.appearance.acrylic,
-                tuple(self.settings.appearance.tint),
-                self.settings.appearance.opacity)
+        appearance = self.settings.appearance
+        self._stealth_report = self.stealth.apply(
+            stealth=self.settings.behaviour.stealth,
+            acrylic=appearance.acrylic,
+            tint=tuple(appearance.tint),
+            opacity=appearance.opacity,
+            no_activate=not self._typing)
+        self._update_stealth_icon()
 
-        # Qt can also recreate the native handle, which silently drops the
-        # display affinity -- the window would become visible to capture with
-        # no error anywhere. This is the guard the original lacked.
-        if not self.stealth.verify_capture_exclusion() and \
-                self.settings.behaviour.stealth:
-            self.stealth.apply(
-                stealth=True,
-                acrylic=self.settings.appearance.acrylic,
-                tint=tuple(self.settings.appearance.tint),
-                opacity=self.settings.appearance.opacity,
-                no_activate=not self._typing)
-
-        # One more pass after the compositor has actually presented a frame.
-        # On a cold start the first apply can land before DWM is ready for
-        # this window, and the flash returns.
+        # DWM compositor queue: re-assert once the compositor has mapped the window frame
         QTimer.singleShot(0, self._reassert_backdrop)
+        QTimer.singleShot(50, self._reassert_backdrop)
 
     def _reassert_backdrop(self) -> None:
         if not hasattr(self, "stealth"):
             return
-        # Skip DWM backdrop when stealth is active (same reason as showEvent).
-        if self.settings.behaviour.stealth:
-            return
-        self.stealth.apply_backdrop(
-            self.settings.appearance.acrylic,
-            tuple(self.settings.appearance.tint),
-            self.settings.appearance.opacity)
+        appearance = self.settings.appearance
+        self.stealth.apply(
+            stealth=self.settings.behaviour.stealth,
+            acrylic=appearance.acrylic,
+            tint=tuple(appearance.tint),
+            opacity=appearance.opacity,
+            no_activate=not self._typing)
+        self._apply_stylesheet()
+        self.update()
 
     # ----------------------------------------------------------------- ui tree
     def _build_ui(self) -> None:
@@ -245,6 +231,7 @@ class Overlay(QMainWindow):
 
         self.panel = QFrame()
         self.panel.setObjectName("Panel")
+        self.panel.setMinimumWidth(0)
         self.panel.hide()
         panel_layout = QVBoxLayout(self.panel)
         panel_layout.setContentsMargins(0, 0, 0, 0)
@@ -252,6 +239,8 @@ class Overlay(QMainWindow):
 
         self.split = QSplitter(Qt.Horizontal)
         self.split.setHandleWidth(1)
+        self.split.setMinimumWidth(0)
+        self.split.setChildrenCollapsible(True)
         self.split.setStyleSheet(
             f"QSplitter::handle{{background:{PALETTE.border};}}")
         self.split.addWidget(self._build_answer_pane())
@@ -400,11 +389,13 @@ class Overlay(QMainWindow):
 
         self.answer_scroll = QScrollArea()
         self.answer_scroll.setWidgetResizable(True)
+        self.answer_scroll.setMinimumWidth(0)
         self.answer_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         _make_transparent(self.answer_scroll)
 
         self.answer_body = QWidget()
         self.answer_body.setObjectName("ScrollBody")
+        self.answer_body.setMinimumWidth(0)
         self.answer_layout = QVBoxLayout(self.answer_body)
         self.answer_layout.setContentsMargins(SPACE.lg, SPACE.md,
                                               SPACE.lg, SPACE.md)
@@ -422,7 +413,7 @@ class Overlay(QMainWindow):
         self.empty_hint.setAlignment(Qt.AlignCenter)
         self.empty_hint.setWordWrap(True)
         self.empty_hint.setStyleSheet(
-            f"color:{PALETTE.text_faint};font-size:{TYPE.size_sm}px;"
+            f"color:{PALETTE.text_faint};font-size:{TYPE.size_sm/TYPE.size_md:.2f}em;"
             f"background:transparent;padding:22px;")
         self.answer_layout.insertWidget(0, self.empty_hint)
 
@@ -494,16 +485,19 @@ class Overlay(QMainWindow):
         # under the pointer and you select the wrong one.
         self.btn_model = ChipComboBox("layers")
         self.btn_model.setToolTip("Provider and model")
+        self.btn_model.setMaximumWidth(160)
         self.btn_model.activated.connect(self._model_chosen)
         row.addWidget(self.btn_model)
 
         self.btn_mode = ChipComboBox("sparkle")
         self.btn_mode.setToolTip("Assistant mode")
+        self.btn_mode.setMaximumWidth(130)
         self.btn_mode.activated.connect(self._mode_chosen)
         row.addWidget(self.btn_mode)
 
         self.attachment_chip = QPushButton()
         self.attachment_chip.setObjectName("Chip")
+        self.attachment_chip.setMaximumWidth(150)
         self.attachment_chip.setIcon(
             icons.icon("close", 12, PALETTE.text_muted))
         self.attachment_chip.setIconSize(QSize(12, 12))
@@ -695,16 +689,17 @@ class Overlay(QMainWindow):
         return height
 
     def _animate_height(self, target: int, on_done=None) -> None:
+        target_w = self.settings.appearance.compact_width
         if not self.settings.appearance.animations:
             self.setFixedHeight(target)
-            self.resize(self.width(), target)
+            self.resize(target_w, target)
             if on_done:
                 on_done()
             return
         anim = QPropertyAnimation(self, b"size", self)
         anim.setDuration(MOTION.normal)
         anim.setStartValue(self.size())
-        anim.setEndValue(QSize(self.width(), target))
+        anim.setEndValue(QSize(target_w, target))
         # OutQuint decelerates hard at the end, which reads as responsive.
         # The original used 300ms OutCubic, which feels sluggish by comparison.
         anim.setEasingCurve(QEasingCurve.OutQuint)
@@ -986,7 +981,7 @@ class Overlay(QMainWindow):
 
     def _add_bubble(self, text: str, is_user: bool) -> MessageBubble:
         self.empty_hint.hide()
-        bubble = MessageBubble(text, is_user)
+        bubble = MessageBubble(text, is_user, parent=self)
         bubble.edit_requested.connect(self._edit_bubble_text)
         
         idx = self.answer_layout.indexOf(self.thinking)
@@ -1200,7 +1195,7 @@ class Overlay(QMainWindow):
         """Show or update the provisional line for a speaker."""
         line = self._partial_widgets.get(speaker)
         if line is None:
-            line = TranscriptLine(speaker, text, partial=True)
+            line = TranscriptLine(speaker, text, partial=True, parent=self)
             self.transcript_layout.insertWidget(
                 self.transcript_layout.count() - 1, line)
             self._partial_widgets[speaker] = line
@@ -1235,7 +1230,7 @@ class Overlay(QMainWindow):
                 self._last_transcript_widget is not None:
             self._last_transcript_widget.set_text(entry["text"])
         else:
-            line = TranscriptLine(entry["speaker"], entry["text"])
+            line = TranscriptLine(entry["speaker"], entry["text"], parent=self)
             self.transcript_layout.insertWidget(
                 self.transcript_layout.count() - 1, line)
             self._last_transcript_index = index
@@ -1463,7 +1458,7 @@ class Overlay(QMainWindow):
         for turn in session.turns:
             self._add_bubble(turn.text, is_user=(turn.role == "user"))
         for index, entry in enumerate(session.transcript):
-            line = TranscriptLine(entry["speaker"], entry["text"])
+            line = TranscriptLine(entry["speaker"], entry["text"], parent=self)
             self.transcript_layout.insertWidget(
                 self.transcript_layout.count() - 1, line)
             self._last_transcript_index = index

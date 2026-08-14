@@ -159,14 +159,14 @@ class HistoryDialog(QDialog):
             colour = (PALETTE.speaker_you if turn.role == "user"
                       else PALETTE.accent)
             parts.append(
-                f'<div style="color:{colour};font-size:{TYPE.size_xs}px;'
+                f'<div style="color:{colour};font-size:{TYPE.size_xs/TYPE.size_md:.2f}em;'
                 f'font-weight:700;margin-top:10px">{who}</div>'
                 + markdown_view.render(turn.text))
 
         if session.transcript:
             parts.append(
                 f'<div style="color:{PALETTE.text_muted};'
-                f'font-size:{TYPE.size_xs}px;font-weight:700;'
+                f'font-size:{TYPE.size_xs/TYPE.size_md:.2f}em;font-weight:700;'
                 f'margin-top:16px">TRANSCRIPT</div>')
             for entry in session.transcript:
                 colour = (PALETTE.speaker_you if entry["speaker"] == "you"

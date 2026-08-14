@@ -55,6 +55,10 @@ class Palette:
     bubble_user: str = "rgba(255, 255, 255, 0.07)"
     bubble_user_border: str = "rgba(255, 255, 255, 0.13)"
 
+    # AI message bubbles
+    bubble_ai: str = "rgba(0, 0, 0, 0.15)"
+    bubble_ai_border: str = "rgba(255, 255, 255, 0.05)"
+
     code_bg: str = "rgba(0, 0, 0, 0.38)"
     code_border: str = "rgba(255, 255, 255, 0.08)"
 
@@ -200,7 +204,7 @@ def stylesheet(accent: str = PALETTE.accent, font_size: int = TYPE.size_md,
         border: 1px solid {p.border};
         border-radius: {s.radius_pill}px;
         padding: 5px 12px;
-        font-size: {t.size_sm}px;
+        font-size: {t.size_sm/t.size_md:.2f}em;
         color: {p.text_muted};
         text-align: left;
     }}
@@ -279,7 +283,7 @@ def stylesheet(accent: str = PALETTE.accent, font_size: int = TYPE.size_md,
         border: 1px solid {p.border_strong};
         border-radius: {s.radius_sm}px;
         padding: 5px 8px;
-        font-size: {t.size_sm}px;
+        font-size: {t.size_sm/t.size_md:.2f}em;
     }}
 
     QMenu {{
@@ -310,7 +314,7 @@ def stylesheet(accent: str = PALETTE.accent, font_size: int = TYPE.size_md,
         padding: 7px 14px;
         margin-right: 2px;
         border-radius: {s.radius_sm}px;
-        font-size: {t.size_sm}px;
+        font-size: {t.size_sm/t.size_md:.2f}em;
         font-weight: 600;
     }}
     QTabBar::tab:selected {{
@@ -320,17 +324,17 @@ def stylesheet(accent: str = PALETTE.accent, font_size: int = TYPE.size_md,
     QTabBar::tab:hover:!selected {{ color: {p.text_muted}; }}
 
     QLabel#Heading {{
-        font-size: {t.size_lg}px;
+        font-size: {t.size_lg/t.size_md:.2f}em;
         font-weight: 600;
         color: {p.text};
     }}
     QLabel#Subtle {{
         color: {p.text_faint};
-        font-size: {t.size_sm}px;
+        font-size: {t.size_sm/t.size_md:.2f}em;
     }}
     QLabel#SectionLabel {{
         color: {p.text_muted};
-        font-size: {t.size_xs}px;
+        font-size: {t.size_xs/t.size_md:.2f}em;
         font-weight: 700;
         letter-spacing: 1px;
     }}

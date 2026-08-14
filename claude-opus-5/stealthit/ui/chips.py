@@ -46,8 +46,16 @@ class ChipComboBox(QComboBox):
         view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setView(view)
         self.setMaxVisibleItems(14)
-        self.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+        self.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+        self.setMinimumContentsLength(6)
+        self.setMinimumWidth(0)
         self.setStyleSheet(self._style())
+
+    def showPopup(self) -> None:
+        super().showPopup()
+        popup = self.findChild(QFrame)
+        if popup:
+            popup.setMinimumWidth(max(280, self.width()))
 
     def setIcon(self, name: str) -> None:
         self._icon_name = name
@@ -61,7 +69,7 @@ class ChipComboBox(QComboBox):
             border: 1px solid {p.border};
             border-radius: {s.radius_pill}px;
             padding: 4px 10px 4px 12px;
-            font-size: {t.size_sm}px;
+            font-size: {t.size_sm/t.size_md:.2f}em;
             color: {p.text_muted};
             min-height: 18px;
         }}
@@ -93,7 +101,7 @@ class ChipComboBox(QComboBox):
         }}
         QComboBox#ChipCombo QAbstractItemView::item:disabled {{
             color: {p.text_faint};
-            font-size: {t.size_xs}px;
+            font-size: {t.size_xs/t.size_md:.2f}em;
         }}
         """
 
