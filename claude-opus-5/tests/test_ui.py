@@ -22,16 +22,19 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import stealthit.native.screen
 
-# Mock screen capture for headless CI environments (like GitHub Actions)
-if os.environ.get("GITHUB_ACTIONS"):
-    from PIL import Image
-    def mock_grab(x=0, y=0, w=200, h=200, *args, **kwargs):
-        return Image.new("RGB", (w, h), (0, 0, 0))
-    stealthit.native.screen.grab = mock_grab
-    def mock_grab_monitor(m=None):
+# Mock screen capture for headless CI environments (like GitHub Actions) and offscreen test runs
+from PIL import Image
+def mock_grab(x=0, y=0, w=200, h=200, *args, **kwargs):
+    return Image.new("RGB", (w, h), (0, 0, 0))
+stealthit.native.screen.grab = mock_grab
+def mock_grab_monitor(m=None):
+    try:
         m = m or stealthit.native.screen.monitor_under_cursor()
         return mock_grab(m.x, m.y, m.width, m.height)
-    stealthit.native.screen.grab_monitor = mock_grab_monitor
+    except Exception:
+        return mock_grab(0, 0, 1920, 1080)
+stealthit.native.screen.grab_monitor = mock_grab_monitor
+stealthit.native.screen.grab_active_window = lambda: mock_grab(0, 0, 800, 600)
 
 results: list[tuple[str, bool, str]] = []
 

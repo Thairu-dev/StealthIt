@@ -25,8 +25,8 @@ from ..core.config import KNOWN_MODELS, ConfigManager, model_supports_vision
 from ..core.secrets import SecretStore
 from ..core.session import Session, SessionStore
 from ..native import DEFAULT_KEYMAP, HotkeyManager, StealthController
-from ..native.screen import (downscale_for_vision, grab, grab_active_window,
-                             grab_monitor)
+from ..native import screen
+from ..native.screen import downscale_for_vision
 from ..native.win32 import WM_HOTKEY
 from ..providers import PROVIDER_LABELS
 from . import icons, markdown_view
@@ -189,6 +189,12 @@ class Overlay(QMainWindow):
             return
 
         appearance = self.settings.appearance
+        if not self.settings.behaviour.stealth:
+            self.stealth.apply_backdrop(
+                appearance.acrylic,
+                tuple(appearance.tint),
+                appearance.opacity)
+
         self._stealth_report = self.stealth.apply(
             stealth=self.settings.behaviour.stealth,
             acrylic=appearance.acrylic,
@@ -896,9 +902,9 @@ class Overlay(QMainWindow):
         """
         try:
             if source == "window":
-                image = grab_active_window()
+                image = screen.grab_active_window()
             else:
-                image = grab_monitor()
+                image = screen.grab_monitor()
         except Exception as exc:
             self.toast.show_message(f"Screen capture failed: {exc}",
                                     kind="error")
@@ -915,7 +921,7 @@ class Overlay(QMainWindow):
             if was_visible:
                 self.show()
             try:
-                self._attach(grab(x, y, w, h), focus=not analyse)
+                self._attach(screen.grab(x, y, w, h), focus=not analyse)
             except Exception as exc:
                 self.toast.show_message(f"Region capture failed: {exc}",
                                         kind="error")
