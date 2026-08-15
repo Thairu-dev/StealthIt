@@ -1,64 +1,44 @@
-# StealthIt: AI Models Competition
+# StealthIt: Invisible AI Desktop Assistant & Models Competition
 
-**StealthIt** is a powerful Vibe coding Challenge, AI-integrated desktop utility designed for stealth and efficiency(Cluely Alternative). It provides instant access to AI capabilities, screen analysis, and voice interaction while remaining completely hidden from the taskbar and screen capture software.
+**StealthIt** is a high-performance **AI Desktop Assistant** designed for high-stakes productivity and stealth efficiency. It floats unobtrusively over your workspace—providing sub-second vision analysis, local Whisper voice transcription, and live AI intelligence while remaining **100% invisible to anyone viewing your screen share or recording** (OBS, Discord, Zoom, Teams).
 
-This repository serves as a **Models Competition**, showcasing how different state-of-the-art AI models approach building and enhancing the StealthIt application.
+This repository also hosts the **AI Models Competition**, showcasing how different state-of-the-art models approach building and enhancing the StealthIt application.
+
+---
+
+## 💼 Core High-Stakes Use Cases
+
+StealthIt functions as a versatile AI Desktop Assistant across multiple professional scenarios:
+
+| Use Case | Description | Primary Hotkeys |
+| :--- | :--- | :--- |
+| **🎙️ Live Meeting Assistant & AI Summarizer** | Silently transcribes Zoom, Teams, Google Meet, or in-person audio locally via Whisper. Instantly summarizes discussions, captures action items, and generates structured executive meeting minutes. | `Ctrl+R` |
+| **💻 Technical Interviews & Live Coding** | Floats invisibly over LeetCode, HackerRank, or IDEs. Snaps problem statements with OCR and provides algorithm breakdowns, time/space complexities, and edge-case warnings. | `Ctrl+Enter` |
+| **📈 Live Sales & Client Objection Handling** | Real-time audio transcription detects client hesitation or competitor mentions and feeds you instant battlecards, pricing rebuttals, and SLA benchmarks. | `Ctrl+R` / `Ctrl+Enter` |
+| **📊 Executive Deep Work & Document Research** | Instant OCR analysis of dense spreadsheets, architecture diagrams, academic papers, and terminal logs without window switching or copying plaintext. | `Ctrl+Enter` |
+| **🎤 Invisible Presentation & Webinar Prompter** | Keeps speech cues, keynote outlines, and audience Q&A answers floating next to your webcam without being visible to viewers. | `Ctrl+\` / `Ctrl+T` |
+
+---
 
 ### 🏆 Competitors / Structure
 - **`/antigravity-original`**: The baseline, original project developed by Antigravity and Gemini-3-pro.
-- **`/claude-opus-5`**: A complete rebuild and enhancement of the app, built by Claude Opus 5 (featuring robust PySide6 Win32 integrations, custom OpenAI-compatible endpoints, and native OS APIs).
+- **`/claude-opus-5`**: A complete rebuild and enhancement of the app, built by Claude Opus 5 (featuring native desktop architecture, custom OpenAI-compatible endpoints, local Whisper transcription, and encrypted local key storage).
 
 > [!TIP]
-> **Recommended Version:** The `/claude-opus-5` (Claude v2) version is the most stable and feature-rich version of the application. It includes numerous bug fixes, UI improvements, and new capabilities (like local DPAPI encrypted keys and copy/edit tools) that are not present in the original baseline. We recommend using this version!
+> **Recommended Version:** The `/claude-opus-5` (Claude v2) version is the most stable and feature-rich version of the application. It includes numerous bug fixes, UI improvements, and new capabilities (like encrypted local key storage and copy/edit tools) that are not present in the original baseline. We recommend using this version!
 
 *Feel free to explore each folder to see their respective READMEs and run the different versions!*
 
 ---
 
-## 🤖 Supported AI Providers
+## ✨ Key Capabilities & Features
 
-StealthIt supports **5 AI providers** for maximum flexibility:
-
-| Provider | Vision Support | Notes |
-| :--- | :---: | :--- |
-| **Google Gemini** | ✅ | Cloud API, excellent vision capabilities |
-| **Ollama** | ✅ | Local LLMs, requires vision models like `llava` |
-| **OpenAI** | ✅ | GPT-4o, GPT-4 Turbo, o1 models |
-| **Anthropic** | ✅ | Claude 4, Claude 3.5 Sonnet/Haiku/Opus |
-| **OpenRouter** | ✅ | Dozens of open and proprietary models *(Claude version only)* |
-
----
-
-## 🚀 Ollama Support
-**StealthIt** now fully supports local LLMs via **Ollama**, including vision capabilities!
-
-### Requirements for Vision (Screen Capture)
-To use the **Capture & Analyze** feature (`Ctrl+Enter`) with Ollama, you **MUST** use a multimodal (vision-capable) model. Standard text models like `llama3` will not work with images.
-
-**Recommended Models:**
-*   `llava` (Lightweight, fast)
-*   `llama3.2-vision` (Higher quality)
-
-**Setup:**
-1.  Install Ollama from [ollama.com](https://ollama.com).
-2.  Pull a vision model:
-    ```bash
-    ollama pull llava
-    ```
-3.  In StealthIt Settings, select **Ollama** provider and choose `llava` as the model.
-
----
-
-## ✨ Features
-
-*   **👻 True Stealth Mode**: The application is hidden from the Windows Taskbar and is invisible to screen capture tools (OBS, Discord, Teams, etc.) thanks to advanced window affinity settings.
-*   **🧠 Multi-Provider AI**: Powered by **Google Gemini**, **OpenAI**, **Anthropic Claude**, **Cerebras**, or local **Ollama** models.
-*   **📸 Instant Vision**: Press `Ctrl+Enter` to instantly capture a screenshot and analyze it with AI.
-*   **🎤 Voice Interaction**: Press `Ctrl+R` to record audio and get instant transcriptions and AI responses *(The Claude version features built-in **Whisper** support for high-accuracy local transcription)*.
-*   **⌨️ Global Hotkeys**: Control the application from anywhere without losing focus.
-*   **🎨 Modern UI**: A sleek, dark, semi-transparent interface that floats unobtrusively on your desktop.
-*   **📝 Markdown Support**: Rich text formatting for AI responses (bold, italics, lists, etc.).
-*   **⚡ Quick Model Switching**: Click the model chip to instantly switch between providers and models.
+*   **👻 True Stealth Invisibility**: Excluded from the Windows Taskbar and 100% invisible to screen recording tools and video calls (OBS, Discord, Zoom, Teams).
+*   **🎙️ Local Whisper Voice & Meeting Transcription**: Press `Ctrl+R` to record system audio or microphone with local Whisper transcription for instant meeting summaries and verbal Q&A.
+*   **📸 Sub-Second Multimodal Vision**: Press `Ctrl+Enter` to silently capture an in-memory screenshot and send it to the AI for instant code or document OCR.
+*   **🔒 Encrypted Local Security**: API keys and transcripts are securely encrypted locally on your machine rather than stored in plaintext files.
+*   **🧠 Multi-Provider AI**: Native support for **Google Gemini**, **OpenAI**, **Anthropic Claude**, **OpenRouter/AgentRouter**, or local **Ollama** models.
+*   **⌨️ Global Hotkeys**: Operate the assistant from anywhere without losing focus or breaking active screen workflows.
 
 ## 🛠️ Installation
 
@@ -125,11 +105,46 @@ Get API keys from your preferred providers:
 | **Ctrl + \\** | **Hide/Show**: Instantly hides or shows the entire application window. |
 | **Ctrl + ,** | **Settings**: Opens the configuration dialog. |
 
-## 🤝 Contributing
+## ⚔️ How to Participate in the AI Models Competition
 
-Feel free to submit issues and enhancement requests.
+The **StealthIt Models Competition** is an open vibe-coding challenge! Developers and AI systems can architect, enhance, and submit their own competitor implementations to see which model designs the best stealth desktop AI utility.
+
+The winning codebase will be crowned by the community and compiled into the official **1-click standalone Windows installer (`.exe`)** with auto-updates and managed Pro cloud AI subscriptions!
+
+### 🥊 Arena Rules for Competitor Submissions:
+1. **True Stealth Compliance**: Your version MUST implement Windows OS-level screen capture exclusion (`SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE)`) and remain invisible to OBS, Zoom, Teams, Discord, and the Windows Taskbar.
+2. **Instant Vision Trigger (`Ctrl+Enter`)**: Must support in-memory screen snapping and multimodal analysis with zero temporary files left on disk.
+3. **Local Encryption**: API keys must not be stored in plaintext `.env` files (use Windows DPAPI or secure encrypted keystores).
+4. **Clean Folder Isolation**: Place your implementation in a new root subfolder (e.g., `/deepseek-r1`, `/gpt-5-preview`) with its own `requirements.txt`, `README.md`, and test instructions.
+
+### 🚀 Submission Steps:
+```bash
+# 1. Fork and clone the repository
+git clone https://github.com/Thairu-dev/StealthIt.git
+cd StealthIt
+
+# 2. Create your model's competitor directory
+mkdir deepseek-r1 # (or your model name)
+cd deepseek-r1
+
+# 3. Build your implementation adhering to the Arena Rules
+# 4. Push and open a Pull Request with your benchmark results!
+```
 
 ---
+
+## 🗳️ Community Voting & Standalone App Roadmap
+
+We are hosting a live community voting hub to decide which model's architecture should power the standalone release:
+- **Phase 1 (Active)**: Models Competition benchmarking, community testing, and voting.
+- **Phase 2 (Upcoming)**: Crown the champion codebase and compile into a standalone `.exe` / `.msi` Windows installer with auto-updates.
+- **Phase 3 (Pro Subscriptions)**: Managed cloud AI proxy with bundled fast tokens (no personal API keys needed), interview presets, and priority low-latency OCR.
+
+---
+
+## 🤝 Contributing & Community
+
+Feel free to submit issues, bug fixes, feature requests, and new model competitor PRs!
 
 ## 🎁 Bonus: Free Premium AI Tokens
 
