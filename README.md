@@ -109,13 +109,13 @@ Get API keys from your preferred providers:
 
 The **StealthIt Models Competition** is an open vibe-coding challenge! Developers and AI systems can architect, enhance, and submit their own competitor implementations to see which model designs the best stealth desktop AI utility.
 
-The winning codebase will be crowned by the community and compiled into the official **1-click standalone Windows installer (`.exe`)** with auto-updates and managed Pro cloud AI subscriptions!
+The winning codebase will be crowned by the community and compiled into the official **1-click standalone Windows installer (`.exe`)** with auto-updates!
 
 ### 🥊 Arena Rules for Competitor Submissions:
-1. **True Stealth Compliance**: Your version MUST implement Windows OS-level screen capture exclusion (`SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE)`) and remain invisible to OBS, Zoom, Teams, Discord, and the Windows Taskbar.
+1. **True Stealth Compliance**: Your version MUST remain 100% invisible on OBS, Zoom, Teams, Discord, and the Windows Taskbar.
 2. **Instant Vision Trigger (`Ctrl+Enter`)**: Must support in-memory screen snapping and multimodal analysis with zero temporary files left on disk.
-3. **Local Encryption**: API keys must not be stored in plaintext `.env` files (use Windows DPAPI or secure encrypted keystores).
-4. **Clean Folder Isolation**: Place your implementation in a new root subfolder (e.g., `/deepseek-r1`, `/gpt-5-preview`) with its own `requirements.txt`, `README.md`, and test instructions.
+3. **Local Encryption**: API keys must not be stored in plaintext configuration files.
+4. **Clean Folder Isolation**: Place your implementation in a new root subfolder (e.g., `/"your_model"`) with its own `requirements.txt`, `README.md`, and test instructions.
 
 ### 🚀 Submission Steps:
 ```bash
@@ -124,8 +124,8 @@ git clone https://github.com/Thairu-dev/StealthIt.git
 cd StealthIt
 
 # 2. Create your model's competitor directory
-mkdir deepseek-r1 # (or your model name)
-cd deepseek-r1
+mkdir "your_model"
+cd "your_model"
 
 # 3. Build your implementation adhering to the Arena Rules
 # 4. Push and open a Pull Request with your benchmark results!
@@ -138,7 +138,6 @@ cd deepseek-r1
 We are hosting a live community voting hub to decide which model's architecture should power the standalone release:
 - **Phase 1 (Active)**: Models Competition benchmarking, community testing, and voting.
 - **Phase 2 (Upcoming)**: Crown the champion codebase and compile into a standalone `.exe` / `.msi` Windows installer with auto-updates.
-- **Phase 3 (Pro Subscriptions)**: Managed cloud AI proxy with bundled fast tokens (no personal API keys needed), interview presets, and priority low-latency OCR.
 
 ---
 
