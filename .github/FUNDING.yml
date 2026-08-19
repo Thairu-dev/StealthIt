@@ -1,4 +1,4 @@
-# Supported funding platforms for StealthIt
-github: [Thairu-dev]
+github: Thairu-dev
 ko_fi: joethairu
-custom: ['https://stealthit-web.vercel.app#sponsor']
+custom:
+  - https://stealthit-web.vercel.app?sponsor=true
