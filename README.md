@@ -1,13 +1,15 @@
-# StealthIt — Your Invisible AI Desktop Companion
+# StealthIt — Invisible AI Meeting & Desktop Assistant
 
 [![GitHub stars](https://img.shields.io/github/stars/Thairu-dev/StealthIt?style=social)](https://github.com/Thairu-dev/StealthIt/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Website](https://img.shields.io/badge/Website-stealthit--web.vercel.app-00f0ff)](https://stealthit-web.vercel.app)
 
-**StealthIt** is a powerful desktop utility designed for seamless interaction in today's fast-paced digital world. Floating unobtrusively over your workspace, it delivers sub-second multimodal vision analysis, local Whisper voice transcription, and live AI assistance—all while remaining **100% invisible to anyone viewing your screen share or recording** (OBS, Discord, Zoom, Microsoft Teams).
+**StealthIt** is an invisible, open-source AI desktop utility designed for **live meeting notes**, **technical interviews & coding**, **instant screen analysis**, and **voice transcription**. Floating directly over your workspace, StealthIt gives you instant access to state-of-the-art AI models (Claude, OpenAI, Gemini, Ollama)—while remaining **completely hidden from the taskbar and 100% invisible to anyone viewing your screen share or recording** (Zoom, Microsoft Teams, Google Meet, Discord, OBS).
 
-Built with Python and the modern PySide6/Qt framework, StealthIt also hosts the **AI Models Competition**, showcasing how different state-of-the-art architectures build and enhance invisible desktop intelligence.
+Whether you need a **silent AI meeting assistant** to summarize audio in real time, a **live coding copilot** that reads problem statements via OCR, or an **invisible presentation prompter**, StealthIt works seamlessly across all your apps without ever being captured on video calls.
+
+Built with Python and PySide6/Qt, this repository also hosts the **AI Models Competition**, tracking how different LLM architectures build and optimize invisible desktop software.
 
 ---
 
