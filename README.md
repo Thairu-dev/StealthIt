@@ -1,8 +1,13 @@
-# StealthIt: Invisible AI Desktop Assistant & Models Competition
+# StealthIt — Your Invisible AI Desktop Companion
 
-**StealthIt** is a high-performance **AI Desktop Assistant** designed for high-stakes productivity and stealth efficiency. It floats unobtrusively over your workspace—providing sub-second vision analysis, local Whisper voice transcription, and live AI intelligence while remaining **100% invisible to anyone viewing your screen share or recording** (OBS, Discord, Zoom, Teams).
+[![GitHub stars](https://img.shields.io/github/stars/Thairu-dev/StealthIt?style=social)](https://github.com/Thairu-dev/StealthIt/stargazers)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Website](https://img.shields.io/badge/Website-stealthit--web.vercel.app-00f0ff)](https://stealthit-web.vercel.app)
 
-This repository also hosts the **AI Models Competition**, showcasing how different state-of-the-art models approach building and enhancing the StealthIt application.
+**StealthIt** is a powerful desktop utility designed for seamless interaction in today's fast-paced digital world. Floating unobtrusively over your workspace, it delivers sub-second multimodal vision analysis, local Whisper voice transcription, and live AI assistance—all while remaining **100% invisible to anyone viewing your screen share or recording** (OBS, Discord, Zoom, Microsoft Teams).
+
+Built with Python and the modern PySide6/Qt framework, StealthIt also hosts the **AI Models Competition**, showcasing how different state-of-the-art architectures build and enhance invisible desktop intelligence.
 
 ---
 
