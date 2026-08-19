@@ -179,6 +179,7 @@ DEFAULT_KEYMAP: dict[str, tuple[str, str]] = {
                     "Answer the last question you were asked"),
     "answer_selection": ("ctrl+shift+s",
                          "Answer using the whole recent conversation"),
+    "followup": ("ctrl+shift+f", "Suggest what to ask or say next"),
     "ask": ("ctrl+space", "Focus the prompt box"),
     "command_palette": ("ctrl+shift+p", "Open the command palette"),
     "toggle_expand": ("ctrl+shift+t", "Expand or collapse the panel"),

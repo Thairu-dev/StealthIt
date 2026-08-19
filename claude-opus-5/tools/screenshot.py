@@ -57,22 +57,26 @@ def main() -> int:
     overlay.show()
     overlay.expand()
 
+    # Build the demo in the order a real call happens, because the panel is now
+    # a single chronological flow -- staging it as "all bubbles, then all
+    # transcript" would produce a screenshot of a layout the app never renders.
+    overlay._on_transcript(
+        "them", "So walk me through how you would reverse a linked list.")
     overlay._add_bubble("How do I reverse a linked list in Python?", True)
     bubble = overlay._add_bubble("", False)
     bubble.set_text(DEMO_ANSWER)
-
-    # Go through the real signal handler so the capture exercises the same
-    # code path the app does, including a live partial at the tail.
-    overlay._on_transcript(
-        "them", "So walk me through how you would reverse a linked list.")
     overlay._on_transcript("you", "Sure, I would do it iteratively.")
+    # A live partial at the tail, through the real signal handler.
     overlay._on_transcript("them", "And what about the space", partial=True)
-    overlay.transcript_pane.show()
+
     overlay.level_meter.show()
     overlay.level_meter.set_level("them", 0.55)
     overlay.level_meter.set_level("you", 0.25)
-    overlay.status_dot.set_state("listening")
     overlay.set_listening_appearance(True)
+    # Drives the "N transcribed" badge on the action bar, which only shows
+    # while a listen is actually running.
+    overlay.listening = True
+    overlay._update_transcript_badge()
     overlay.resize(880, 580)
 
     out_dir = Path(__file__).resolve().parent.parent / "docs"

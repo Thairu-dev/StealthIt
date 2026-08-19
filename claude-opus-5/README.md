@@ -127,9 +127,16 @@ keys in an old `.env` are imported into encrypted storage automatically.
 - **Syntax-highlighted code** with per-block copy. The original rendered code
   as undifferentiated proportional text — the worst part of its output for a
   tool whose main job is answering coding questions.
-- **Answer and transcript side by side.** The original's tabbed
-  Chat/Transcription split meant reading the question and the answer were
-  mutually exclusive.
+- **One chat flow for everything.** Heard speech, your questions and the
+  model's answers land in a single column, in the order they happened. The
+  original's tabbed Chat/Transcription split meant reading the question and the
+  answer were mutually exclusive; a side-by-side pane only moves the problem,
+  since you still read the question in one place and the answer in another.
+- **Conversation actions above the prompt** — **Assistant** answers what you
+  were just asked (`Ctrl+Shift+A`), **Follow-up** suggests what to say next
+  (`Ctrl+Shift+F`), **Summary** condenses the call. Placed above the input
+  because that is where your hands already are, and none of them take focus
+  off a half-typed question.
 - **Custom-painted widgets** — waveform level meter, wave-motion thinking
   indicator, pulsing status dot — instead of QSS approximations.
 - **One design-token file** replacing ~15 widgets' worth of inline
@@ -151,9 +158,13 @@ All global — they work while another application has focus.
 | `Ctrl+Enter` | Capture the screen and analyse it |
 | `Ctrl+Shift+Enter` | Select a region and analyse it |
 | `Ctrl+Shift+L` | Start / stop listening to the call |
+| `Ctrl+Shift+A` | Answer the question you were just asked |
+| `Ctrl+Shift+S` | Answer using the whole recent conversation |
+| `Ctrl+Shift+F` | Suggest what to ask or say next |
 | `Ctrl+Space` | Focus the prompt |
 | `Ctrl+Shift+P` | Command palette |
 | `Ctrl+Shift+T` | Expand / collapse |
+| `Ctrl+Shift+H` | Browse past conversations |
 | `Ctrl+Shift+K` | New conversation |
 | `Ctrl+Shift+X` | Toggle click-through |
 | `Ctrl+Shift+,` | Settings |

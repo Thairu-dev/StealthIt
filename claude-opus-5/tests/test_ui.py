@@ -1,4 +1,4 @@
-"""
+﻿"""
 UI verification.
 
 Builds the real Overlay against a real QApplication offscreen, renders it to a
@@ -369,7 +369,7 @@ def _():
     _overlay._on_transcript("you", "I have six years of backend work.")
     assert len(_overlay.session.transcript) == 2
 
-    lines = [w for w in _overlay.transcript_body.findChildren(TranscriptLine)
+    lines = [w for w in _overlay.answer_body.findChildren(TranscriptLine)
              if not w.partial]
     assert len(lines) == 2, f"expected 2 transcript widgets, got {len(lines)}"
     # The tag and the words must describe the same speaker. An earlier version
@@ -384,7 +384,7 @@ def _():
     # A follow-on fragment from the same speaker must update the existing
     # widget rather than appending a duplicate.
     _overlay._on_transcript("you", "Mostly Python and Go.")
-    lines = [w for w in _overlay.transcript_body.findChildren(TranscriptLine)
+    lines = [w for w in _overlay.answer_body.findChildren(TranscriptLine)
              if not w.partial]
     assert len(lines) == 2, f"fragment appended a new line ({len(lines)})"
     assert "Mostly Python and Go." in lines[-1].label.text()
@@ -397,7 +397,7 @@ def _():
     _overlay.new_session()
 
     def partials():
-        return [w for w in _overlay.transcript_body.findChildren(TranscriptLine)
+        return [w for w in _overlay.answer_body.findChildren(TranscriptLine)
                 if w.partial]
 
     # Interim text appears while speech is still in progress.
@@ -418,7 +418,7 @@ def _():
     assert len(_overlay.session.transcript) == 1
     assert _overlay.session.transcript[0]["text"].endswith("failed?")
 
-    finals = [w for w in _overlay.transcript_body.findChildren(TranscriptLine)
+    finals = [w for w in _overlay.answer_body.findChildren(TranscriptLine)
               if not w.partial]
     assert len(finals) == 1, f"expected 1 committed line, got {len(finals)}"
     return "provisional line updated in place, then swapped for the final"
@@ -746,6 +746,231 @@ def _():
     return "acrylic toggle rebuilds the stylesheet"
 
 
+def _chat_flow():
+    """
+    The chat items in visual order.
+
+    Skips the empty hint, the thinking indicator and the trailing stretch,
+    which are furniture rather than conversation.
+    """
+    items = []
+    for i in range(_overlay.answer_layout.count()):
+        widget = _overlay.answer_layout.itemAt(i).widget()
+        if widget is None or widget in (_overlay.empty_hint, _overlay.thinking):
+            continue
+        items.append(widget)
+    return items
+
+
+@check("Transcript and answers share one chat flow")
+def _():
+    from PySide6.QtWidgets import QSplitter
+    from stealthit.ui.widgets import MessageBubble, TranscriptLine
+
+    # The split view is gone: reading the question in one pane and the answer
+    # in another is exactly the wrong shape during a live call.
+    for gone in ("transcript_pane", "transcript_body", "transcript_scroll",
+                 "transcript_layout"):
+        assert not hasattr(_overlay, gone), \
+            f"{gone} still exists; the transcript is still a separate pane"
+    assert not _overlay.findChildren(QSplitter), \
+        "a splitter is still dividing the panel"
+
+    _overlay.new_session()
+    saved = _overlay.settings.behaviour.auto_suggest
+    _overlay.settings.behaviour.auto_suggest = False  # keep the order ours
+    try:
+        _overlay._on_transcript("them", "What is your notice period?")
+        _overlay._add_bubble("Four weeks.", is_user=False)
+        _overlay._on_transcript("you", "Four weeks from signing.")
+    finally:
+        _overlay.settings.behaviour.auto_suggest = saved
+
+    flow = _chat_flow()
+    kinds = [type(w).__name__ for w in flow]
+    # Heard line, then the answer, then the reply -- in the order they
+    # happened. Bubbles and transcript lines previously inserted on opposite
+    # sides of the thinking indicator, which put every answer above every
+    # heard line no matter when it was said.
+    assert kinds == ["TranscriptLine", "MessageBubble", "TranscriptLine"], kinds
+    assert isinstance(flow[0], TranscriptLine)
+    assert isinstance(flow[1], MessageBubble)
+    return "one column, chronological: heard -> answered -> replied"
+
+
+@check("A continued line shows only the newly heard words")
+def _():
+    from stealthit.ui.widgets import TranscriptLine
+
+    _overlay.new_session()
+    saved = _overlay.settings.behaviour.auto_suggest
+    _overlay.settings.behaviour.auto_suggest = False
+    try:
+        _overlay._on_transcript("them", "What is your salary expectation?")
+        _overlay._add_bubble("Say around 120.", is_user=False)
+        # Same speaker within the merge window, so the session folds this into
+        # the entry above -- but that entry can no longer grow in place,
+        # because an answer now sits below it.
+        _overlay._on_transcript("them", "And when could you start?")
+    finally:
+        _overlay.settings.behaviour.auto_suggest = saved
+
+    assert len(_overlay.session.transcript) == 1, \
+        "the session should still merge consecutive fragments"
+
+    lines = [w for w in _chat_flow() if isinstance(w, TranscriptLine)]
+    assert len(lines) == 2, f"expected 2 lines, got {len(lines)}"
+    assert lines[0].label.text() == "What is your salary expectation?"
+    # The continuation must not reprint the merged entry in full, or the
+    # question the user can already see appears on screen twice.
+    assert lines[1].label.text() == "And when could you start?", \
+        f"continuation repeated earlier text: {lines[1].label.text()!r}"
+    assert "salary" not in lines[1].label.text()
+    return "continuation carries only the new words, no duplicated sentence"
+
+
+@check("Partials resolve inline without leaving a gap")
+def _():
+    from stealthit.ui.widgets import MessageBubble, TranscriptLine
+
+    _overlay.new_session()
+    saved = _overlay.settings.behaviour.auto_suggest
+    _overlay.settings.behaviour.auto_suggest = False
+    try:
+        _overlay._add_bubble("earlier answer", is_user=False)
+        _overlay._on_transcript("them", "So how would you", partial=True)
+        flow = _chat_flow()
+        # The provisional line belongs at the bottom of the flow, under the
+        # answer that came before it, not above it.
+        assert isinstance(flow[-1], TranscriptLine) and flow[-1].partial, \
+            [type(w).__name__ for w in flow]
+        assert isinstance(flow[0], MessageBubble)
+
+        _overlay._on_transcript("them", "So how would you handle that?")
+    finally:
+        _overlay.settings.behaviour.auto_suggest = saved
+
+    flow = _chat_flow()
+    assert not [w for w in flow
+                if isinstance(w, TranscriptLine) and w.partial], \
+        "provisional line survived the final"
+    assert isinstance(flow[-1], TranscriptLine)
+    assert flow[-1].label.text().endswith("handle that?")
+    return "partial shown at the tail, replaced in place by the final"
+
+
+@check("Action bar sits directly above the prompt")
+def _():
+    input_wrap = _overlay.input.parentWidget()
+    layout = input_wrap.layout()
+    bar_index = layout.indexOf(_overlay.action_bar)
+    input_index = layout.indexOf(_overlay.input)
+    assert bar_index >= 0, "action bar is not in the input area"
+    assert bar_index < input_index, \
+        f"action bar is below the prompt (bar {bar_index}, input {input_index})"
+
+    buttons = [_overlay.btn_assist, _overlay.btn_followup,
+               _overlay.btn_summarise]
+    for btn in buttons:
+        assert btn.toolTip(), f"{btn.text().strip()!r} has no tooltip"
+        assert not btn.icon().isNull(), \
+            f"{btn.text().strip()!r} has no icon"
+        # A click must not pull the caret out of the prompt box, or you lose
+        # your half-typed question to reach for an action.
+        assert btn.focusPolicy() == Qt.NoFocus, \
+            f"{btn.text().strip()!r} steals focus from the prompt"
+    labels = [b.text().strip() for b in buttons]
+    assert labels == ["Assistant", "Follow-up", "Summary"], labels
+    return f"{', '.join(labels)} above the prompt, none steal focus"
+
+
+@check("Follow-up action warns when there is nothing to build on")
+def _():
+    _overlay.new_session()
+    _overlay.suggest_followup()
+    assert _overlay.toast.isVisible(), "no warning shown"
+    assert "follow up" in _overlay.toast.label.text().lower(), \
+        _overlay.toast.label.text()
+    assert not _overlay.session.turns, "asked the model with no context"
+
+    # With something said, it asks -- and asks for a line that can be spoken
+    # verbatim, which is the whole point during a call.
+    asked = []
+    original = _overlay.engine.ask
+    _overlay.engine.ask = lambda *a, **kw: asked.append((a, kw))
+    try:
+        _overlay.session.add_transcript("them", "We are worried about cost.")
+        _overlay.suggest_followup()
+    finally:
+        _overlay.engine.ask = original
+
+    assert asked, "follow-up sent nothing"
+    prompt = asked[0][0][1]
+    assert "next" in prompt.lower()
+    assert asked[0][1].get("include_transcript") is True, \
+        "follow-up ignored the transcript it is supposed to build on"
+    return "warns when empty; otherwise asks with the transcript attached"
+
+
+@check("Transcript badge tracks the live count")
+def _():
+    _overlay.new_session()
+    saved_listen, saved_suggest = (_overlay.listening,
+                                  _overlay.settings.behaviour.auto_suggest)
+    _overlay.settings.behaviour.auto_suggest = False
+    try:
+        # Not listening: no badge, so it never claims a live feed that is off.
+        _overlay._update_transcript_badge()
+        assert _overlay.transcript_badge.isHidden()
+
+        _overlay.listening = True
+        _overlay._on_transcript("them", "first thing said")
+        assert not _overlay.transcript_badge.isHidden(), "badge stayed hidden"
+        assert "1" in _overlay.transcript_badge.text()
+
+        _overlay._on_transcript("you", "my reply")
+        assert "2" in _overlay.transcript_badge.text(), \
+            _overlay.transcript_badge.text()
+
+        _overlay.listening = False
+        _overlay._update_transcript_badge()
+        assert _overlay.transcript_badge.isHidden(), \
+            "badge still showing after listening stopped"
+    finally:
+        _overlay.listening = saved_listen
+        _overlay.settings.behaviour.auto_suggest = saved_suggest
+    return "counts while listening, hides when it stops"
+
+
+@check("Reopened sessions replay in time order")
+def _():
+    from stealthit.core.session import Session
+    from stealthit.ui.widgets import MessageBubble, TranscriptLine
+
+    _overlay.new_session()
+    session = Session()
+    # Stamped out of insertion order on purpose: turns and transcript are
+    # stored in two lists, so replaying them list-by-list would put every
+    # heard line after every answer regardless of when it was said.
+    session.add_user("my question").timestamp = 100.0
+    session.add_assistant("my answer").timestamp = 300.0
+    session.add_transcript("them", "heard before the answer")
+    session.transcript[-1]["timestamp"] = 200.0
+    session.add_transcript("you", "said after the answer")
+    session.transcript[-1]["timestamp"] = 400.0
+
+    _overlay._resume_session(session)
+    flow = _chat_flow()
+    kinds = [type(w).__name__ for w in flow]
+    assert kinds == ["MessageBubble", "TranscriptLine",
+                     "MessageBubble", "TranscriptLine"], kinds
+    assert isinstance(flow[1], TranscriptLine)
+    assert flow[1].label.text() == "heard before the answer"
+    assert isinstance(flow[2], MessageBubble)
+    assert flow[3].label.text() == "said after the answer"
+    return "4 items interleaved by timestamp, not grouped by kind"
+
+
 @check("Command palette builds")
 def _():
     from stealthit.ui.command_palette import CommandPalette
@@ -931,7 +1156,7 @@ def _():
 
     _overlay._resume_session(session)
     bubbles = _overlay.answer_body.findChildren(MessageBubble)
-    lines = _overlay.transcript_body.findChildren(TranscriptLine)
+    lines = _overlay.answer_body.findChildren(TranscriptLine)
     assert len(bubbles) == 2, f"expected 2 bubbles, got {len(bubbles)}"
     assert len(lines) == 1, f"expected 1 transcript line, got {len(lines)}"
     assert _overlay.session is session
@@ -1213,3 +1438,4 @@ if passed != total:
         if not ok:
             print(f"  - {name}: {detail}")
 sys.exit(0 if passed == total else 1)
+

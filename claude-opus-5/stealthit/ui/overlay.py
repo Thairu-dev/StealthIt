@@ -18,7 +18,7 @@ from PySide6.QtCore import (QEasingCurve, QPoint, QPropertyAnimation, QSize,
 from PySide6.QtGui import QColor, QCursor, QGuiApplication, QPalette
 from PySide6.QtWidgets import (QApplication, QFrame, QHBoxLayout, QLabel,
                                QMainWindow, QMenu, QPushButton, QScrollArea,
-                               QSizePolicy, QSplitter, QVBoxLayout, QWidget)
+                               QSizePolicy, QVBoxLayout, QWidget)
 
 from ..audio import AudioCapture, Transcriber
 from ..core.config import KNOWN_MODELS, ConfigManager, model_supports_vision
@@ -75,6 +75,10 @@ class Overlay(QMainWindow):
         self._pending_image: Image.Image | None = None
         self._last_transcript_index: int = -1
         self._last_transcript_widget: TranscriptLine | None = None
+        # Text already on screen for _last_transcript_index. Session entries
+        # grow as a speaker keeps talking, so this is what lets a continuation
+        # line show only the new words instead of repeating the whole entry.
+        self._last_transcript_rendered: str = ""
         self._partial_widgets: dict[str, TranscriptLine] = {}
         self._typing = False
         self._anim: QPropertyAnimation | None = None
@@ -243,17 +247,11 @@ class Overlay(QMainWindow):
         panel_layout.setContentsMargins(0, 0, 0, 0)
         panel_layout.setSpacing(0)
 
-        self.split = QSplitter(Qt.Horizontal)
-        self.split.setHandleWidth(1)
-        self.split.setMinimumWidth(0)
-        self.split.setChildrenCollapsible(True)
-        self.split.setStyleSheet(
-            f"QSplitter::handle{{background:{PALETTE.border};}}")
-        self.split.addWidget(self._build_answer_pane())
-        self.split.addWidget(self._build_transcript_pane())
-        self.split.setSizes([440, 220])
-        self.transcript_pane.hide()  # only shown while listening
-        panel_layout.addWidget(self.split, 1)
+        # One column, not a split. Transcript lines are appended into the same
+        # chat flow as questions and answers, because a side pane forces you to
+        # read the question in one place and the answer in another -- during a
+        # live call that split is exactly the wrong shape.
+        panel_layout.addWidget(self._build_answer_pane(), 1)
 
         panel_layout.addWidget(self._build_input_area())
         outer.addWidget(self.panel, 1)
@@ -427,44 +425,63 @@ class Overlay(QMainWindow):
         layout.addWidget(self.answer_scroll)
         return wrap
 
-    def _build_transcript_pane(self) -> QWidget:
-        wrap = QWidget()
-        self.transcript_pane = wrap
-        layout = QVBoxLayout(wrap)
+    def _build_action_bar(self) -> QWidget:
+        """
+        Conversation actions, sitting directly above the prompt.
+
+        These are the things you want during a live call, when typing a
+        question is exactly what you do not have time for: answer what was
+        just asked, push the current thread further, or condense what has been
+        said so far. Placed above the input because that is where your hands
+        already are.
+        """
+        bar = QWidget()
+        self.action_bar = bar
+        layout = QHBoxLayout(bar)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        layout.setSpacing(SPACE.xs)
 
-        header = QWidget()
-        header_layout = QHBoxLayout(header)
-        header_layout.setContentsMargins(SPACE.md, SPACE.sm, SPACE.sm, SPACE.xs)
-        title = QLabel("LIVE TRANSCRIPT")
-        title.setObjectName("SectionLabel")
-        header_layout.addWidget(title)
-        header_layout.addStretch()
-        self.btn_summarise = QPushButton("Summarise")
-        self.btn_summarise.setObjectName("Chip")
-        self.btn_summarise.setCursor(Qt.PointingHandCursor)
-        self.btn_summarise.setToolTip(
-            "Summarise the call so far with decisions and action items")
-        self.btn_summarise.clicked.connect(self.summarise_call)
-        header_layout.addWidget(self.btn_summarise)
-        layout.addWidget(header)
+        self.btn_assist = self._action_button(
+            "sparkle", "Assistant",
+            "Answer the question you were just asked  (Ctrl+Shift+A)",
+            self.answer_last_question)
+        layout.addWidget(self.btn_assist)
 
-        self.transcript_scroll = QScrollArea()
-        self.transcript_scroll.setWidgetResizable(True)
-        self.transcript_scroll.setHorizontalScrollBarPolicy(
-            Qt.ScrollBarAlwaysOff)
-        _make_transparent(self.transcript_scroll)
-        self.transcript_body = QWidget()
-        self.transcript_body.setObjectName("ScrollBody")
-        self.transcript_layout = QVBoxLayout(self.transcript_body)
-        self.transcript_layout.setContentsMargins(SPACE.md, 0, SPACE.sm,
-                                                  SPACE.md)
-        self.transcript_layout.setSpacing(0)
-        self.transcript_layout.addStretch()
-        self.transcript_scroll.setWidget(self.transcript_body)
-        layout.addWidget(self.transcript_scroll)
-        return wrap
+        self.btn_followup = self._action_button(
+            "message", "Follow-up",
+            "Suggest what to ask or say next  (Ctrl+Shift+F)",
+            self.suggest_followup)
+        layout.addWidget(self.btn_followup)
+
+        self.btn_summarise = self._action_button(
+            "list", "Summary",
+            "Summarise the conversation: decisions, actions, open questions",
+            self.summarise_call)
+        layout.addWidget(self.btn_summarise)
+
+        layout.addStretch()
+
+        # Live count, so it is obvious the transcript is actually arriving.
+        self.transcript_badge = QLabel("")
+        self.transcript_badge.setStyleSheet(
+            f"color:{PALETTE.text_faint};font-size:{TYPE.size_xs}px;"
+            f"background:transparent;")
+        self.transcript_badge.hide()
+        layout.addWidget(self.transcript_badge)
+
+        return bar
+
+    def _action_button(self, icon_name: str, text: str, tooltip: str,
+                       callback) -> QPushButton:
+        btn = QPushButton(f"  {text}")
+        btn.setObjectName("Chip")
+        btn.setIcon(icons.icon(icon_name, 13, PALETTE.text_muted))
+        btn.setIconSize(QSize(13, 13))
+        btn.setToolTip(tooltip)
+        btn.setCursor(Qt.PointingHandCursor)
+        btn.setFocusPolicy(Qt.NoFocus)  # keep focus in the prompt box
+        btn.clicked.connect(callback)
+        return btn
 
     def _build_input_area(self) -> QWidget:
         wrap = QFrame()
@@ -472,6 +489,8 @@ class Overlay(QMainWindow):
         layout = QVBoxLayout(wrap)
         layout.setContentsMargins(SPACE.md, SPACE.md, SPACE.md, SPACE.md)
         layout.setSpacing(SPACE.sm)
+
+        layout.addWidget(self._build_action_bar())
 
         self.input = AutoGrowTextEdit(
             "Ask anything...  (Enter to send, Shift+Enter for a new line)")
@@ -548,6 +567,7 @@ class Overlay(QMainWindow):
             "toggle_listen": self.toggle_listening,
             "answer_last": self.answer_last_question,
             "answer_selection": self.answer_from_context,
+            "followup": self.suggest_followup,
             "ask": self.focus_prompt,
             "command_palette": self._show_command_palette,
             "toggle_expand": self.toggle_expanded,
@@ -986,15 +1006,9 @@ class Overlay(QMainWindow):
         self.btn_stop.hide()
 
     def _add_bubble(self, text: str, is_user: bool) -> MessageBubble:
-        self.empty_hint.hide()
         bubble = MessageBubble(text, is_user, parent=self)
         bubble.edit_requested.connect(self._edit_bubble_text)
-        
-        idx = self.answer_layout.indexOf(self.thinking)
-        if idx < 0:
-            idx = self.answer_layout.count() - 1
-            
-        self.answer_layout.insertWidget(idx, bubble)
+        self._insert_into_chat(bubble)
         QTimer.singleShot(16, self._scroll_answers_to_bottom)
         return bubble
 
@@ -1061,8 +1075,11 @@ class Overlay(QMainWindow):
         self._transcript_widgets = {}
         self._last_transcript_index = -1
         self._last_transcript_widget = None
+        self._last_transcript_rendered = ""
+        # Partials live in the chat flow now, so clearing it above already
+        # destroyed the widgets; just drop the stale references.
         self._partial_widgets.clear()
-        self._clear_widgets(self.transcript_layout)
+        self._update_transcript_badge()
         self.empty_hint.show()
         self.toast.show_message("New conversation", timeout=2000)
 
@@ -1113,7 +1130,7 @@ class Overlay(QMainWindow):
 
         self.level_meter.start()
         self.expand()
-        self.transcript_pane.show()
+        self._update_transcript_badge()
 
         sources = self.audio.active_sources
         detail = ("you and the other participants"
@@ -1145,6 +1162,7 @@ class Overlay(QMainWindow):
             self._clear_partial(speaker)
         self.set_listening_appearance(False)
         self.level_meter.stop()
+        self._update_transcript_badge()
 
         if self.settings.behaviour.save_sessions:
             self.sessions.save(self.session)
@@ -1198,17 +1216,15 @@ class Overlay(QMainWindow):
                 include_transcript=True)
 
     def _render_partial(self, speaker: str, text: str) -> None:
-        """Show or update the provisional line for a speaker."""
+        """Show or update the provisional line for a speaker, inline in chat."""
         line = self._partial_widgets.get(speaker)
         if line is None:
             line = TranscriptLine(speaker, text, partial=True, parent=self)
-            self.transcript_layout.insertWidget(
-                self.transcript_layout.count() - 1, line)
+            self._insert_into_chat(line)
             self._partial_widgets[speaker] = line
         else:
             line.set_text(text)
-        bar = self.transcript_scroll.verticalScrollBar()
-        QTimer.singleShot(16, lambda: bar.setValue(bar.maximum()))
+        self._scroll_answers_to_bottom()
 
     def _clear_partial(self, speaker: str) -> None:
         line = self._partial_widgets.pop(speaker, None)
@@ -1216,15 +1232,48 @@ class Overlay(QMainWindow):
             line.setParent(None)
             line.deleteLater()
 
+    def _insert_into_chat(self, widget: QWidget) -> None:
+        """
+        Append a widget to the bottom of the chat flow.
+
+        Every kind of chat item goes through here -- your messages, model
+        answers and heard transcript lines -- so one rule decides the order.
+        Two things stay pinned below the flow: the thinking indicator, which
+        belongs under whatever is being answered, and the trailing stretch that
+        keeps a short conversation top-aligned. Inserting at the indicator is
+        therefore "the bottom of the conversation".
+
+        Bubbles and transcript lines previously inserted on opposite sides of
+        the indicator, which put every answer above every heard line no matter
+        when it was said -- the exact ordering problem that merging the two
+        panes was meant to remove.
+        """
+        self.empty_hint.hide()
+        index = self.answer_layout.indexOf(self.thinking)
+        if index < 0:  # indicator gone (defensive): fall back to above stretch
+            index = max(0, self.answer_layout.count() - 1)
+        self.answer_layout.insertWidget(index, widget)
+
+    def _chat_tail_index(self) -> int:
+        """Layout index the last chat item occupies, or -1 if the flow is empty."""
+        return self.answer_layout.indexOf(self.thinking) - 1
+
     def _render_transcript_tail(self, speaker: str = "", text: str = "") -> None:
         """
-        Sync the transcript pane with the last session entry.
+        Sync the chat flow with the last session entry.
 
         Session.add_transcript merges consecutive fragments from one speaker
         into a single entry, so the view must mirror that: update the existing
         widget when the tail entry grew, and only append when a new entry
         (i.e. a speaker change) started. Deriving both the speaker and the text
         from the entry itself keeps the tag and the words from disagreeing.
+
+        A caveat of sharing one column: the tail widget can only be updated in
+        place while it is still the last thing in the flow. Once an answer is
+        appended after it, further speech from the same speaker starts a new
+        line rather than retroactively growing one above the answer -- and that
+        new line carries only the words that have arrived since, because
+        reprinting the merged entry in full would show the same sentence twice.
         """
         entries = self.session.transcript
         if not entries:
@@ -1232,22 +1281,64 @@ class Overlay(QMainWindow):
         index = len(entries) - 1
         entry = entries[index]
 
-        if self._last_transcript_index == index and \
-                self._last_transcript_widget is not None:
-            self._last_transcript_widget.set_text(entry["text"])
-        else:
-            line = TranscriptLine(entry["speaker"], entry["text"], parent=self)
-            self.transcript_layout.insertWidget(
-                self.transcript_layout.count() - 1, line)
-            self._last_transcript_index = index
-            self._last_transcript_widget = line
+        widget = self._last_transcript_widget
+        still_last = (
+            widget is not None
+            and self.answer_layout.indexOf(widget) == self._chat_tail_index())
 
-        bar = self.transcript_scroll.verticalScrollBar()
-        QTimer.singleShot(16, lambda: bar.setValue(bar.maximum()))
+        if self._last_transcript_index == index and still_last:
+            widget.set_text(entry["text"])
+            self._last_transcript_rendered = entry["text"]
+        else:
+            text = entry["text"]
+            if self._last_transcript_index == index:
+                shown = self._last_transcript_rendered
+                if shown and text.startswith(shown):
+                    text = text[len(shown):].lstrip()
+            if text:
+                line = TranscriptLine(entry["speaker"], text, parent=self)
+                self._insert_into_chat(line)
+                self._last_transcript_widget = line
+            self._last_transcript_index = index
+            self._last_transcript_rendered = entry["text"]
+
+        self._update_transcript_badge()
+        self._scroll_answers_to_bottom()
+
+    def _update_transcript_badge(self) -> None:
+        count = len(self.session.transcript)
+        if count and self.listening:
+            self.transcript_badge.setText(
+                f"{count} transcribed" if count != 1 else "1 transcribed")
+            self.transcript_badge.show()
+        else:
+            self.transcript_badge.hide()
 
     def _on_status(self, message: str) -> None:
         if message:
             self.toast.show_message(message, timeout=6000)
+
+    def suggest_followup(self) -> None:
+        """
+        Suggest what to ask or say next.
+
+        Distinct from Assistant: that answers a question aimed at you, this
+        moves the conversation forward when nothing has been asked -- the
+        awkward pause where you need a good next question.
+        """
+        if not (self.session.transcript or self.session.turns):
+            self.toast.show_message(
+                "Nothing to follow up on yet. Start listening (Ctrl+Shift+L) "
+                "or ask something first.", timeout=5000)
+            return
+        self.expand()
+        self._add_bubble("Suggest a follow-up", is_user=True)
+        self.engine.ask(
+            self.session,
+            "Based on the conversation so far, give me the single best thing "
+            "to say or ask next, and why in one line. Then two alternatives. "
+            "Phrase each so I can say it out loud verbatim.",
+            include_transcript=True)
 
     def summarise_call(self) -> None:
         if not self.session.transcript:
@@ -1406,6 +1497,8 @@ class Overlay(QMainWindow):
              self.answer_last_question),
             ("Answer from the conversation", "Use the whole recent exchange",
              self.answer_from_context),
+            ("Suggest a follow-up", "What to ask or say next",
+             self.suggest_followup),
             ("Capture screen", "Answer about the whole display",
              lambda: self.capture_and_ask("screen")),
             ("Capture region", "Drag to select an area, then answer",
@@ -1455,25 +1548,39 @@ class Overlay(QMainWindow):
                                      else self.settings.active_mode)
         self.input.clear()
         self._clear_attachment()
-        self._clear_widgets(self.answer_layout, keep={self.empty_hint, self.thinking})
-        self._clear_widgets(self.transcript_layout)
+        self._clear_widgets(self.answer_layout,
+                            keep={self.empty_hint, self.thinking})
         self._partial_widgets.clear()
         self._last_transcript_index = -1
         self._last_transcript_widget = None
+        self._last_transcript_rendered = ""
 
+        # Rebuild in time order. Turns and transcript now share one column, so
+        # replaying them as two separate blocks would put every heard line
+        # after every answer regardless of when it was actually said.
+        events: list[tuple[float, int, object]] = []
         for turn in session.turns:
-            self._add_bubble(turn.text, is_user=(turn.role == "user"))
+            events.append((turn.timestamp, 0, turn))
         for index, entry in enumerate(session.transcript):
-            line = TranscriptLine(entry["speaker"], entry["text"], parent=self)
-            self.transcript_layout.insertWidget(
-                self.transcript_layout.count() - 1, line)
-            self._last_transcript_index = index
-            self._last_transcript_widget = line
+            events.append((entry.get("timestamp", 0.0), 1, (index, entry)))
+        events.sort(key=lambda e: (e[0], e[1]))
 
-        if session.turns:
+        for _stamp, kind, payload in events:
+            if kind == 0:
+                self._add_bubble(payload.text,
+                                 is_user=(payload.role == "user"))
+            else:
+                index, entry = payload
+                line = TranscriptLine(entry["speaker"], entry["text"],
+                                      parent=self)
+                self._insert_into_chat(line)
+                self._last_transcript_index = index
+                self._last_transcript_widget = line
+                self._last_transcript_rendered = entry["text"]
+
+        if session.turns or session.transcript:
             self.empty_hint.hide()
-        if session.transcript:
-            self.transcript_pane.show()
+        self._update_transcript_badge()
 
         self.expand()
         self._refresh_chips()
