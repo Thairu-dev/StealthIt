@@ -113,12 +113,25 @@ function registerIpcHandlers(): void {
   // Settings & Encrypted Secrets
   ipcMain.handle('settings:get', () => store.getSettings());
   ipcMain.handle('settings:update', (_e, partial: Partial<AppSettings>) => {
+    const prev = store.getSettings();
     const updated = store.updateSettings(partial);
     if (partial.stealth) {
       windows.syncStealthSettings(updated.stealth);
     }
     if (partial.shareBetaLogs !== undefined) {
       logger.setAutoSend(Boolean(updated.shareBetaLogs));
+    }
+    if (partial.activeProvider && partial.activeProvider !== prev.activeProvider) {
+      logger.info('system', 'Active AI provider changed', {
+        provider: updated.activeProvider,
+        model: updated.providers[updated.activeProvider].model,
+      });
+    }
+    if (partial.stt && partial.stt.provider !== prev.stt.provider) {
+      logger.info('stt', 'Audio STT provider changed', {
+        provider: updated.stt.provider,
+        model: updated.stt.model,
+      });
     }
     windows.broadcastSettings();
     return updated;
@@ -366,16 +379,24 @@ function registerIpcHandlers(): void {
     const t0 = Date.now();
     const result = await transcribeAudioChunk(store, req);
     const ms = Date.now() - t0;
+    const provider = store.getSettings().stt.provider;
     if (result.error) {
       logger.error('stt', 'STT transcription error', {
-        provider: store.getSettings().stt.provider,
+        provider,
         speaker: req.speaker,
         ms,
         error: result.error.slice(0, 180),
       });
     } else if (ms > 3000) {
       logger.warn('stt', 'Slow STT transcription', {
-        provider: store.getSettings().stt.provider,
+        provider,
+        speaker: req.speaker,
+        ms,
+        chars: result.text.length,
+      });
+    } else if (result.text.length > 0) {
+      logger.info('stt', 'STT transcribed', {
+        provider,
         speaker: req.speaker,
         ms,
         chars: result.text.length,
@@ -385,7 +406,13 @@ function registerIpcHandlers(): void {
   });
 
   // Logs
-  logger.setAutoSend(Boolean(store.getSettings().shareBetaLogs));
+  const initSettings = store.getSettings();
+  logger.setAutoSend(Boolean(initSettings.shareBetaLogs));
+  logger.info('system', 'StealthIt started', {
+    version: app.getVersion(),
+    provider: initSettings.activeProvider,
+    sttProvider: initSettings.stt.provider,
+  });
   ipcMain.handle('logs:get', () => logger.getEntries());
   ipcMain.handle('logs:clear', () => {
     logger.clear();

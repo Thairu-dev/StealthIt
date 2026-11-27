@@ -1,5 +1,13 @@
 import { app } from 'electron';
-import { appendFileSync, existsSync, mkdirSync, renameSync, statSync, writeFileSync } from 'fs';
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  statSync,
+  writeFileSync,
+} from 'fs';
 import { join } from 'path';
 import type { LogCategory, LogEntry, LogLevel } from '@shared/types';
 
@@ -9,6 +17,7 @@ const BETA_LOGS_ENDPOINT = 'https://stealthit-web.vercel.app/api/beta-logs';
 
 class AppLogger {
   private entries: LogEntry[] = [];
+  private loadedFromDisk = false;
   private logPath: string | null = null;
   private logDir: string | null = null;
   private autoSendEnabled = false;
@@ -184,7 +193,51 @@ class AppLogger {
     this.log('error', category, message, meta);
   }
 
+  private hydrateFromDisk(): void {
+    if (this.loadedFromDisk) return;
+    this.loadedFromDisk = true;
+    const filePath = this.ensurePath();
+    if (!filePath || !existsSync(filePath)) return;
+    try {
+      const lines = readFileSync(filePath, 'utf8').split(/\r?\n/).filter(Boolean);
+      const recent = lines.slice(-200);
+      const parsed: LogEntry[] = [];
+      for (let i = 0; i < recent.length; i++) {
+        const m = /^\[([^\]]+)\] \[(INFO|WARN|ERROR)\] \[([^\]]+)\] (.*)$/.exec(recent[i]);
+        if (!m) continue;
+        const ts = Date.parse(m[1]) || Date.now();
+        const level = m[2].toLowerCase() as LogLevel;
+        const category = (['ai', 'stt', 'capture', 'system'].includes(m[3]) ? m[3] : 'system') as LogCategory;
+        let message = m[4];
+        let meta: Record<string, string | number | boolean> | undefined;
+        const jsonIdx = message.lastIndexOf(' {');
+        if (jsonIdx !== -1 && message.endsWith('}')) {
+          try {
+            meta = JSON.parse(message.slice(jsonIdx + 1)) as Record<string, string | number | boolean>;
+            message = message.slice(0, jsonIdx);
+          } catch {
+            // keep raw message
+          }
+        }
+        parsed.push({
+          id: `disk-${i}-${ts}`,
+          timestamp: ts,
+          level,
+          category,
+          message,
+          ...(meta ? { meta } : {}),
+        });
+      }
+      if (parsed.length > 0) {
+        this.entries = [...parsed, ...this.entries].slice(-MAX_MEMORY_ENTRIES);
+      }
+    } catch {
+      // ignore disk read errors
+    }
+  }
+
   public getEntries(): LogEntry[] {
+    this.hydrateFromDisk();
     return [...this.entries].reverse();
   }
 

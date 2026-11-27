@@ -66,6 +66,30 @@ npm run typecheck
 npm test
 ```
 
+### Optional: Local Offline Whisper Server
+*(Skip this if you use **Groq Whisper (Free Tier)**, **OpenAI Whisper**, **Google Gemini Audio**, or **Deepgram** — those work in the standalone `.exe` with zero extra setup.)*
+
+If you want 100% offline transcription with **Local Offline Server** in **Dashboard → Audio & Voice**, start a local Whisper HTTP server on port `8000` using **either** method below:
+
+#### Method A — Standalone `.exe` Users (1 command with Docker)
+```bash
+# CPU (works on any PC)
+docker run --rm -p 8000:8000 fedirz/faster-whisper-server:latest-cpu
+
+# Or NVIDIA GPU (much faster)
+docker run --rm --gpus all -p 8000:8000 fedirz/faster-whisper-server:latest-cuda
+```
+Then in **Dashboard → Audio & Voice**, select **Local Offline Server** and leave the default URL:
+`http://localhost:8000/v1/audio/transcriptions`
+
+#### Method B — Running from Source (Python 3.10+, no Docker)
+```bash
+pip install faster-whisper fastapi uvicorn python-multipart
+cd stealthit-electron
+npm run whisper:local
+```
+Leave the URL as `http://localhost:8000/v1/audio/transcriptions` and press **`Ctrl + Shift + Space`** to start listening.
+
 ---
 
 ## 🔑 Supported Providers

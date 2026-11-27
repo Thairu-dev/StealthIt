@@ -106,7 +106,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     },
     gemini: {
       id: 'gemini',
-      model: 'gemini-2.5-flash',
+      model: 'gemini-flash-latest',
       baseUrl: 'https://generativelanguage.googleapis.com',
     },
     openrouter: {
@@ -168,7 +168,7 @@ export const PROVIDER_META = {
   },
   gemini: {
     label: 'Google Gemini',
-    defaultModels: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash'],
+    defaultModels: ['gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-pro-latest'],
     requiresKey: true,
   },
   openrouter: {

@@ -271,10 +271,15 @@ export async function transcribeAudioChunk(
       speaker: req.speaker,
     };
   } catch (err) {
+    const raw = err instanceof Error ? err.message : 'Transcription request failed';
+    const friendly =
+      stt.provider === 'local-whisper' && /fetch failed|ECONNREFUSED|ENOTFOUND/i.test(raw)
+        ? `No local Whisper server is running at ${endpoint}. Start an OpenAI-compatible Whisper server (e.g. faster-whisper-server, whisper.cpp server, or "npm run whisper:local" from source) — or switch to Groq Whisper (free tier), OpenAI, or Gemini Audio in Dashboard -> Audio & Voice.`
+        : raw;
     return {
       text: '',
       speaker: req.speaker,
-      error: err instanceof Error ? err.message : 'Transcription request failed',
+      error: friendly,
     };
   }
 }

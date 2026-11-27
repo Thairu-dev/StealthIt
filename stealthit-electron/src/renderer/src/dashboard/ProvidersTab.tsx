@@ -143,8 +143,10 @@ export function ProvidersTab({
               }`}
             >
               <div className="flex w-full items-center justify-between">
-                <span className="text-xs font-semibold text-[var(--ink)]">
-                  {PROVIDER_META[id].label.split(' ')[0]}
+                <span className="truncate text-xs font-semibold text-[var(--ink)]">
+                  {id === 'openrouter'
+                    ? 'OpenRouter / Custom'
+                    : PROVIDER_META[id].label.split(' ')[0]}
                 </span>
                 <span
                   className="h-2 w-2 rounded-full"

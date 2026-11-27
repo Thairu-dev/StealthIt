@@ -243,6 +243,29 @@ export function AudioTab({
               placeholder="http://localhost:8000/v1/audio/transcriptions"
               className="w-full rounded-xl border border-[var(--line)] bg-[var(--inset)] px-3 py-2 text-xs text-[var(--ink)] focus:border-sky-400/50 focus:outline-none"
             />
+            <div className="space-y-1.5 rounded-xl border border-[var(--line-soft)] bg-[var(--canvas)] px-3 py-2.5 text-[11px] leading-relaxed text-[var(--ink-2)]">
+              <p className="font-medium text-[var(--ink)]">How to start Local Offline Whisper (port 8000)</p>
+              <p>
+                <strong className="text-[var(--ink)]">1. Standalone app (Docker):</strong> run{' '}
+                <code className="select-all rounded bg-[var(--field)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--ink)]">
+                  docker run --rm -p 8000:8000 fedirz/faster-whisper-server:latest-cpu
+                </code>
+              </p>
+              <p>
+                <strong className="text-[var(--ink)]">2. From source (Python):</strong> run{' '}
+                <code className="select-all rounded bg-[var(--field)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--ink)]">
+                  pip install faster-whisper fastapi uvicorn python-multipart
+                </code>{' '}
+                then{' '}
+                <code className="select-all rounded bg-[var(--field)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--ink)]">
+                  npm run whisper:local
+                </code>
+              </p>
+              <p className="text-[10.5px] text-[var(--ink-3)]">
+                Want zero local setup? Switch to <strong>Groq Whisper (Free Tier)</strong>,{' '}
+                <strong>OpenAI Whisper</strong>, or <strong>Google Gemini Audio</strong> above.
+              </p>
+            </div>
           </div>
         )}
 
