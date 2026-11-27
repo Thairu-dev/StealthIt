@@ -3,11 +3,11 @@ name: CD Pipeline (Release)
 on:
   push:
     tags:
-      - 'v*' # Trigger only on version tags like v1.0.0
+      - 'v*' # Trigger on version tags like v3.0.0-beta.1
 
 jobs:
   build-and-release:
-    name: Build & Release Executables
+    name: Build & Release Windows Installer
     runs-on: windows-latest
     permissions:
       contents: write
@@ -16,40 +16,30 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          python-version: "3.11"
-          cache: 'pip'
+          node-version: "20"
+          cache: 'npm'
+          cache-dependency-path: stealthit-electron/package-lock.json
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pyinstaller
+        working-directory: stealthit-electron
+        run: npm ci
 
-      - name: Build Antigravity Original
-        run: |
-          cd antigravity-original
-          pip install -r requirements.txt
-          pyinstaller StealthIt.spec
-          # Zip the resulting executable
-          Compress-Archive -Path dist\StealthIt.exe -DestinationPath ..\StealthIt-Original.zip
+      - name: Run Unit Tests
+        working-directory: stealthit-electron
+        run: npm test
 
-      - name: Build Claude Opus 5
-        run: |
-          cd claude-opus-5
-          pip install -r requirements.txt
-          # Using pyinstaller directly for the module
-          pyinstaller --noconfirm --onedir --windowed --name "StealthIt-Claude" stealthit/__main__.py
-          # Zip the resulting dist directory
-          Compress-Archive -Path dist\StealthIt-Claude -DestinationPath ..\StealthIt-Claude.zip
+      - name: Package Windows Installer & Portable Exe
+        working-directory: stealthit-electron
+        run: npm run dist:win
 
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            StealthIt-Original.zip
-            StealthIt-Claude.zip
+            stealthit-electron/dist/*.exe
           draft: false
-          prerelease: false
+          prerelease: true
           generate_release_notes: true

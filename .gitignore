@@ -28,3 +28,6 @@ video_frames/
 
 # Personal Docs
 antigravity-original/Docs/
+
+node_modules/
+deepseek-v4-flash/

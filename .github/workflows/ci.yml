@@ -7,56 +7,28 @@ on:
     branches: [ "main" ]
 
 jobs:
-  test-antigravity:
-    name: Test Antigravity Original
+  build-and-test:
+    name: Typecheck, Build & Test (stealthit-electron)
     runs-on: windows-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          python-version: "3.11"
-          cache: 'pip'
+          node-version: "20"
+          cache: 'npm'
+          cache-dependency-path: stealthit-electron/package-lock.json
 
       - name: Install dependencies
-        run: |
-          cd antigravity-original
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest
+        working-directory: stealthit-electron
+        run: npm ci
 
-      - name: Run Pytest
-        run: |
-          cd antigravity-original
-          python -m pytest tests/
+      - name: Typecheck & Build
+        working-directory: stealthit-electron
+        run: npm run build
 
-  test-claude:
-    name: Test Claude Opus 5
-    runs-on: windows-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: 'pip'
-
-      - name: Install dependencies
-        run: |
-          cd claude-opus-5
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Run Core Tests
-        run: |
-          cd claude-opus-5
-          python -m tests.test_core
-
-      - name: Run UI Tests
-        run: |
-          cd claude-opus-5
-          python -m tests.test_ui
+      - name: Run Unit Tests
+        working-directory: stealthit-electron
+        run: npm test

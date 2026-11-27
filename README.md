@@ -1,171 +1,112 @@
-# StealthIt — Invisible AI Meeting & Desktop Assistant (Free Cluely Alternative)
+# StealthIt (Beta) — Invisible AI Meeting & Desktop Assistant (Free Cluely Alternative)
 
 [![GitHub stars](https://img.shields.io/github/stars/Thairu-dev/StealthIt?style=social)](https://github.com/Thairu-dev/StealthIt/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Status: Beta](https://img.shields.io/badge/Status-v3%20Beta-00f0ff)](https://github.com/Thairu-dev/StealthIt/releases)
+[![Node.js 20+](https://img.shields.io/badge/node-20+-339933)](https://nodejs.org/)
 [![Website](https://img.shields.io/badge/Website-stealthit--web.vercel.app-00f0ff)](https://stealthit-web.vercel.app)
 
-**StealthIt** is a free, open-source **Cluely alternative** and invisible AI desktop assistant designed for **live meeting notes**, **technical interviews & coding**, **instant screen analysis**, and **voice transcription**. Floating directly over your workspace, StealthIt gives you instant access to state-of-the-art AI models (Claude, OpenAI, Gemini, Ollama)—while remaining **completely hidden from the taskbar and 100% invisible to anyone viewing your screen share or recording** (Zoom, Microsoft Teams, Google Meet, Discord, OBS).
-
-Whether you need a **silent AI meeting assistant** to summarize audio in real time, a **live coding copilot** that reads problem statements via OCR, or an **invisible presentation prompter**, StealthIt works seamlessly across all your apps without ever being captured on video calls.
-
-Built with Python and PySide6/Qt, this repository also hosts the **AI Models Competition**, tracking how different LLM architectures build and optimize invisible desktop software.
+**StealthIt** is a free, open-source **Cluely alternative** and invisible AI desktop assistant currently in **public Beta (v3)**. Built with Electron, React, TypeScript, and native Windows stealth APIs, it floats cleanly over your workspace for **live meeting notes**, **technical interviews & coding**, **instant screen analysis**, and **dual-channel voice transcription** — while staying **completely hidden from the taskbar and invisible to screen sharing & recording** (Zoom, Microsoft Teams, Google Meet, Discord, OBS).
 
 ---
 
-## 💼 Core High-Stakes Use Cases
-
-StealthIt functions as a versatile AI Desktop Assistant across multiple professional scenarios:
+## 💼 Core Use Cases
 
 | Use Case | Description | Primary Hotkeys |
 | :--- | :--- | :--- |
-| **🎙️ Live Meeting Assistant & AI Summarizer** | Silently transcribes Zoom, Teams, Google Meet, or in-person audio locally via Whisper. Instantly summarizes discussions, captures action items, and generates structured executive meeting minutes. | `Ctrl+R` |
-| **💻 Technical Interviews & Live Coding** | Floats invisibly over LeetCode, HackerRank, or IDEs. Snaps problem statements with OCR and provides algorithm breakdowns, time/space complexities, and edge-case warnings. | `Ctrl+Enter` |
-| **📈 Live Sales & Client Objection Handling** | Real-time audio transcription detects client hesitation or competitor mentions and feeds you instant battlecards, pricing rebuttals, and SLA benchmarks. | `Ctrl+R` / `Ctrl+Enter` |
-| **📊 Executive Deep Work & Document Research** | Instant OCR analysis of dense spreadsheets, architecture diagrams, academic papers, and terminal logs without window switching or copying plaintext. | `Ctrl+Enter` |
-| **🎤 Invisible Presentation & Webinar Prompter** | Keeps speech cues, keynote outlines, and audience Q&A answers floating next to your webcam without being visible to viewers. | `Ctrl+\` / `Ctrl+T` |
+| **🎙️ Live Meeting Assistant & AI Summarizer** | Dual-channel audio captures both computer/meeting audio (`THEM`) and your microphone (`ME`). Trigger instant spoken responses without clicking or stealing window focus. | `Ctrl+Shift+Space` / `Ctrl+Shift+Enter` |
+| **💻 Technical Interviews & Live Coding** | Floats invisibly over LeetCode, HackerRank, or IDEs. Captures full screen or a saved screen region in memory for instant algorithm breakdowns, complexity, and code. | `Ctrl+Enter` |
+| **📈 Sales & Client Objection Handling** | Real-time transcription paired with your saved product/pricing context feeds instant rebuttals and follow-up questions. | `Ctrl+Shift+Enter` |
+| **📊 Document & Screen Analysis** | Instant vision OCR on dense spreadsheets, slides, architecture diagrams, and terminal logs with zero files written to disk. | `Ctrl+Enter` |
 
 ---
 
-### 🏆 Competitors / Structure
-- **`/antigravity-original`**: The baseline, original project developed by Antigravity and Gemini-3-pro.
-- **`/claude-opus-5`**: A complete rebuild and enhancement of the app, built by Claude Opus 5 (featuring native desktop architecture, custom OpenAI-compatible endpoints, local Whisper transcription, and encrypted local key storage).
+## ✨ Key Features (v3 Beta)
 
-> [!TIP]
-> **Recommended Version:** The `/claude-opus-5` (Claude v2) version is the most stable and feature-rich version of the application. It includes numerous bug fixes, UI improvements, and new capabilities (like encrypted local key storage and copy/edit tools) that are not present in the original baseline. We recommend using this version!
-
-*Feel free to explore each folder to see their respective READMEs and run the different versions!*
+- **👻 True Stealth Mode:** Hidden from the Windows taskbar and excluded from screen capture (`WDA_EXCLUDEFROMCAPTURE`) across Zoom, Teams, Meet, Discord, and OBS — plus **Ghost Click-Through Mode** (`Ctrl+Shift+T`) so clicks pass straight through the HUD.
+- **📸 In-Memory Vision & Saved Region Capture:** Press `Ctrl+Enter` for instant full-screen capture, or enable **Capture Selected Area Only** in Settings to drag-select a region once and auto-crop every future capture. StealthIt's own windows are always excluded from screenshots.
+- **🎙️ Dual-Channel Live Audio (`THEM` + `ME`):** Supports **Deepgram Live**, **Groq Whisper** (free tier), **OpenAI Whisper** (reuses OpenAI key), **Google Gemini Audio** (reuses Gemini key), and **Local Offline Whisper** — with adaptive VAD, speaker-bleed echo deduplication, and hallucination filtering.
+- **🧠 Multi-Provider AI + Automatic Fallback:** Native support for **OpenAI**, **Anthropic Claude**, **Google Gemini**, **OpenRouter / Custom keyless endpoints** (vLLM, Colab/Tailscale, LM Studio), and **Ollama** — with an inline HUD model switcher and **Automatic Fallback Model** failover on errors or first-token timeouts.
+- **🔒 100% Local & Device-Encrypted:** API keys are encrypted locally via OS key storage (`safeStorage` / Windows DPAPI). Sessions, transcripts, and rotating diagnostic logs never leave your device unless you explicitly opt in.
+- **🗂️ Full Dashboard:** Collapsible sidebar, date-grouped Chat History with smart multi-word full-text search, customizable Personas & toggleable Background Context (`Context On / Off`), Light/Dark themes, and live **Activity Logs**.
 
 ---
 
-## ✨ Key Capabilities & Features
+## 🛠️ Download or Run from Source (Beta)
 
-*   **👻 True Stealth Invisibility**: Excluded from the Windows Taskbar and 100% invisible to screen recording tools and video calls (OBS, Discord, Zoom, Teams).
-*   **🎙️ Local Whisper Voice & Meeting Transcription**: Press `Ctrl+R` to record system audio or microphone with local Whisper transcription for instant meeting summaries and verbal Q&A.
-*   **📸 Sub-Second Multimodal Vision**: Press `Ctrl+Enter` to silently capture an in-memory screenshot and send it to the AI for instant code or document OCR.
-*   **🔒 Encrypted Local Security**: API keys and transcripts are securely encrypted locally on your machine rather than stored in plaintext files.
-*   **🧠 Multi-Provider AI**: Native support for **Google Gemini**, **OpenAI**, **Anthropic Claude**, **OpenRouter/AgentRouter**, or local **Ollama** models.
-*   **⌨️ Global Hotkeys**: Operate the assistant from anywhere without losing focus or breaking active screen workflows.
+### Option 1 — Download Windows `.exe` (Easiest)
+Download the latest Beta installer or portable `.exe` from **[GitHub Releases](https://github.com/Thairu-dev/StealthIt/releases)**.
 
-## 🛠️ Installation
+*(Note: Since beta builds are unsigned, Windows SmartScreen may show a prompt — click **More info → Run anyway**.)*
 
-1.  **Clone the Repository**:
-    ```bash
-    git clone https://github.com/Thairu-dev/StealthIt.git
-    cd StealthIt
-    ```
+### Option 2 — Run from Source
+Ensure you have **Node.js 20+** installed:
 
-2.  **Choose your competitor**:
-    ```bash
-    cd claude-opus-5
-    # OR
-    cd antigravity-original
-    ```
-
-3.  **Install Dependencies**:
-    Ensure you have Python 3.10+ installed.
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-4.  **Run the Application**:
-    If you are running the `antigravity-original` version:
-    ```bash
-    python main.py
-    ```
-    If you are running the `claude-opus-5` version:
-    ```bash
-    python -m stealthit
-    ```
-
-## 🔑 API Keys
-
-Get API keys from your preferred providers:
-
-| Provider | Get API Key |
-| :--- | :--- |
-| **Google Gemini** | [Google AI Studio](https://aistudio.google.com/app/apikey) |
-| **OpenAI** | [OpenAI Platform](https://platform.openai.com/api-keys) |
-| **Anthropic** | [Anthropic Console](https://console.anthropic.com/) |
-| **Ollama** | No API key needed (runs locally) |
-
-## ⚙️ Configuration
-
-1.  Open the **Settings** menu by clicking the ⚙️ icon or pressing `Ctrl+,`.
-2.  Select your **Active Provider** from the dropdown.
-3.  Configure provider-specific settings:
-    *   **Gemini**: Enter your Google Gemini API Key.
-    *   **OpenAI**: Enter your OpenAI API Key, select model (GPT-4o, GPT-4 Turbo, etc.).
-    *   **Anthropic**: Enter your Anthropic API Key, select model (Claude 4, Claude 3.5, etc.).
-    *   **Ollama**: Configure your Ollama host URL (default: `http://localhost:11434`).
-
-> **Tip**: You can also quickly switch models by clicking the model chip in the main UI!
-
-## 🎮 Usage & Hotkeys
-
-| Hotkey | Action |
-| :--- | :--- |
-| **Ctrl + Enter** | **Capture & Analyze**: Takes a screenshot and sends it to the AI with your prompt. |
-| **Ctrl + R** | **Record Audio**: Toggles microphone recording for voice queries. |
-| **Ctrl + T** | **Toggle Chat**: Expands or collapses the chat window. |
-| **Ctrl + W** | **Close App**: Completely terminates the application. |
-| **Ctrl + \\** | **Hide/Show**: Instantly hides or shows the entire application window. |
-| **Ctrl + ,** | **Settings**: Opens the configuration dialog. |
-
-## ⚔️ How to Participate in the AI Models Competition
-
-The **StealthIt Models Competition** is an open vibe-coding challenge! Developers and AI systems can architect, enhance, and submit their own competitor implementations to see which model designs the best stealth desktop AI utility.
-
-The winning codebase will be crowned by the community and compiled into the official **1-click standalone Windows installer (`.exe`)** with auto-updates!
-
-### 🥊 Arena Rules for Competitor Submissions:
-1. **True Stealth Compliance**: Your version MUST remain 100% invisible on OBS, Zoom, Teams, Discord, and the Windows Taskbar.
-2. **Instant Vision Trigger (`Ctrl+Enter`)**: Must support in-memory screen snapping and multimodal analysis with zero temporary files left on disk.
-3. **Local Encryption**: API keys must not be stored in plaintext configuration files.
-4. **Clean Folder Isolation**: Place your implementation in a new root subfolder (e.g., `/"your_model"`) with its own `requirements.txt`, `README.md`, and test instructions.
-
-### 🚀 Submission Steps:
 ```bash
-# 1. Fork and clone the repository
 git clone https://github.com/Thairu-dev/StealthIt.git
-cd StealthIt
+cd StealthIt/stealthit-electron
+npm install
+npm run dev
+```
 
-# 2. Create your model's competitor directory
-mkdir "your_model"
-cd "your_model"
+### Build a Standalone Windows `.exe` Installer
+```bash
+cd stealthit-electron
+npm run dist:win
+```
+After the build completes, the packaged executables are saved in **`stealthit-electron/dist/`**:
+- **`stealthit-electron/dist/StealthIt-<version>-Setup-x64.exe`** — Windows NSIS installer
+- **`stealthit-electron/dist/StealthIt-<version>-Portable-x64.exe`** — Standalone portable `.exe` (no installation needed)
+- **`stealthit-electron/dist/win-unpacked/StealthIt.exe`** — Unpacked app folder for quick local testing
 
-# 3. Build your implementation adhering to the Arena Rules
-# 4. Push and open a Pull Request with your benchmark results!
+### Run Tests & Typecheck
+```bash
+cd stealthit-electron
+npm run typecheck
+npm test
 ```
 
 ---
 
-## 🗳️ Community Voting & Standalone App Roadmap
+## 🔑 Supported Providers
 
-We are hosting a live community voting hub to decide which model's architecture should power the standalone release:
-- **Phase 1 (Active)**: Models Competition benchmarking, community testing, and voting.
-- **Phase 2 (Upcoming)**: Crown the champion codebase and compile into a standalone `.exe` / `.msi` Windows installer with auto-updates.
+| Provider | Notes |
+| :--- | :--- |
+| **OpenAI** | Chat, Vision, and Whisper STT (1 key covers both) |
+| **Google Gemini** | Chat, Vision, and Gemini Audio STT (1 key covers both) |
+| **Anthropic Claude** | Chat & Vision |
+| **OpenRouter / Custom** | Supports OpenRouter or any custom/self-hosted OpenAI-compatible URL (API key optional for custom URLs) |
+| **Ollama** | Local or Tailscale/Colab remote models, no API key needed |
+| **Groq / Deepgram** | Optional fast/free-tier Whisper (`Groq`) or real-time WebSocket captions (`Deepgram`) |
 
 ---
 
-## 🤝 Contributing & Community
+## ⌨️ Global Hotkeys
 
-Feel free to submit issues, bug fixes, feature requests, and new model competitor PRs!
+| Hotkey | Action |
+| :--- | :--- |
+| **`Ctrl + \`** | Instantly hide or reveal the floating HUD |
+| **`Ctrl + Enter`** | Capture active screen (or saved region) & analyze with AI |
+| **`Ctrl + Shift + Enter`** | Instant **"What should I say?"** from live transcript (no focus steal) |
+| **`Ctrl + Shift + Space`** | Start / stop live dual-channel audio listening |
+| **`Ctrl + Shift + E`** | Expand or collapse the HUD response panel |
+| **`Ctrl + Shift + T`** | Toggle Ghost Click-Through mode |
+| **`Ctrl + Shift + D`** | Open / hide the Dashboard |
+| **`Ctrl + ← ↑ → ↓`** | Move the HUD (active only while HUD is visible) |
+| **`Ctrl + Shift + Backspace`** | Panic clear — wipes current view & hides HUD immediately |
+| **`Ctrl + Shift + Q`** | Quit StealthIt completely |
 
-## 🎁 Bonus: Free Premium AI Tokens
+---
 
-Want to test cutting-edge models like `claude-opus-4-8`, `claude-opus-5`, and `gpt-5.6-sol`? 
+## 💬 We Need Your Beta Feedback!
 
-AgentRouter is currently giving away **$175 worth of free tokens** to new users! You can use these tokens directly in the Claude version of StealthIt (using the custom endpoints feature we built).
+StealthIt v3 is in **public Beta**, and your feedback directly shapes the stable release. If you hit a bug, provider timeout, audio quirk, or have a feature request:
 
-**To claim:**
-1. Go to this referral link: **[https://agentrouter.org/register?aff=Plwl](https://agentrouter.org/register?aff=Plwl)**
-2. Sign up using your **GitHub account**. *(Note: The GitHub signup button is only visible if you are on a desktop browser).*
+- **In-App 1-Click Reporting:** Open **Dashboard (`Ctrl + Shift + D`) → Logs** and click **Report Bug** (opens a pre-filled GitHub Issue with sanitized diagnostic logs) or **Send Logs** (uploads sanitized error/latency metadata — never keys, prompts, transcripts, or screenshots).
+- **Bug Reports & Feature Ideas:** Open an issue on **[GitHub Issues](https://github.com/Thairu-dev/StealthIt/issues)**.
+- **Pull Requests:** Contributions are very welcome — run `npm run typecheck && npm test` inside `stealthit-electron/` before opening a PR.
 
 ## 💖 Support this Project
 
-If you find this project helpful, consider supporting the development!
+If you find StealthIt helpful, consider supporting its development:
 [![Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/joethairu)
-
----
-*Built with ❤️ by Antigravity & Gemini-3-pro*
