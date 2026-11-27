@@ -74,6 +74,7 @@ export function DashboardApp(): React.JSX.Element {
   });
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [isMaximized, setIsMaximized] = useState(false);
+  const [appVersion, setAppVersion] = useState('');
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     try {
       return window.localStorage.getItem('stealthit:sidebar-collapsed') === '1';
@@ -101,18 +102,20 @@ export function DashboardApp(): React.JSX.Element {
 
   useEffect(() => {
     const loadAll = async (): Promise<void> => {
-      const [s, sec, p, sess, st] = await Promise.all([
+      const [s, sec, p, sess, st, ver] = await Promise.all([
         bridge.getSettings(),
         bridge.getSecretStatus(),
         bridge.getPersonas(),
         bridge.getSessions(),
         bridge.getStealthStatus(),
+        bridge.getAppVersion(),
       ]);
       setSettings(s);
       setSecrets(sec);
       setPersonas(p);
       setSessions(sess);
       setStealthStatus(st);
+      setAppVersion(ver);
     };
     void loadAll();
 
@@ -188,6 +191,11 @@ export function DashboardApp(): React.JSX.Element {
           <span className="text-[13px] font-semibold tracking-[-0.015em] text-[var(--ink)]">
             StealthIt
           </span>
+          {appVersion && (
+            <span className="rounded-[5px] bg-[var(--field)] px-1.5 py-0.5 font-mono text-[10px] font-medium text-[var(--ink-3)]">
+              v{appVersion}
+            </span>
+          )}
           <span
             className="inline-flex items-center gap-1 rounded-[6px] px-2 py-0.5 text-[10.5px] font-medium"
             style={

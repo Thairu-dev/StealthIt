@@ -232,6 +232,7 @@ export interface StealthItBridge {
   toggleMaximizeDashboard: () => Promise<boolean>;
   moveHud: (dx: number, dy: number) => Promise<void>;
   openExternal: (url: string) => Promise<void>;
+  getAppVersion: () => Promise<string>;
   quitApp: () => Promise<void>;
 
   // Screen Capture

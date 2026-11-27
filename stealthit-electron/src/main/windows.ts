@@ -239,6 +239,7 @@ export class WindowManager {
       width: HUD_DEFAULT_WIDTH,
       height: HUD_COLLAPSED_HEIGHT,
       title: '',
+      type: 'toolbar',
       frame: false,
       thickFrame: false,
       roundedCorners: false,

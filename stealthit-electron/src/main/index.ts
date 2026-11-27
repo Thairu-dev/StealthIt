@@ -87,6 +87,7 @@ function registerIpcHandlers(): void {
       // ignore invalid URLs
     }
   });
+  ipcMain.handle('app:version', () => app.getVersion());
   ipcMain.handle('app:quit', () => {
     windows.quit();
   });

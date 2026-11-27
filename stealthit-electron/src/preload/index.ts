@@ -41,6 +41,7 @@ const bridge: StealthItBridge = {
   toggleMaximizeDashboard: () => ipcRenderer.invoke('window:toggle-maximize-dashboard'),
   moveHud: (dx: number, dy: number) => ipcRenderer.invoke('window:move-hud', dx, dy),
   openExternal: (url: string) => ipcRenderer.invoke('shell:open-external', url),
+  getAppVersion: () => ipcRenderer.invoke('app:version'),
   quitApp: () => ipcRenderer.invoke('app:quit'),
 
   // Screen Capture
