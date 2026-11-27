@@ -1,0 +1,257 @@
+/**
+ * @import {Nodes, Parents, PhrasingContent, Root, Text} from 'mdast'
+ * @import {BuildVisitor, Test, VisitorResult} from 'unist-util-visit-parents'
+ */
+
+/**
+ * @typedef RegExpMatchObject
+ *   Info on the match.
+ * @property {number} index
+ *   The index of the search at which the result was found.
+ * @property {string} input
+ *   A copy of the search string in the text node.
+ * @property {[...Array<Parents>, Text]} stack
+ *   All ancestors of the text node, where the last node is the text itself.
+ *
+ * @typedef {RegExp | string} Find
+ *   Pattern to find.
+ *
+ *   Strings are escaped and then turned into global expressions.
+ *
+ * @typedef {Array<FindAndReplaceTuple>} FindAndReplaceList
+ *   Several find and replaces, in array form.
+ *
+ * @typedef {[Find, Replace?]} FindAndReplaceTuple
+ *   Find and replace in tuple form.
+ *
+ * @typedef {ReplaceFunction | string | null | undefined} Replace
+ *   Thing to replace with.
+ *
+ * @callback ReplaceFunction
+ *   Callback called when a search matches.
+ * @param {...any} parameters
+ *   The parameters are the result of corresponding search expression:
+ *
+ *   * `value` (`string`) — whole match
+ *   * `...capture` (`Array<string>`) — matches from regex capture groups
+ *   * `match` (`RegExpMatchObject`) — info on the match
+ * @returns {Array<PhrasingContent> | PhrasingContent | string | false | null | undefined}
+ *   Thing to replace with.
+ *
+ *   * when `null`, `undefined`, `''`, remove the match
+ *   * …or when `false`, do not replace at all
+ *   * …or when `string`, replace with a text node of that value
+ *   * …or when `Node` or `Array<Node>`, replace with those nodes
+ *
+ * @typedef {[RegExp, ReplaceFunction]} Pair
+ *   Normalized find and replace.
+ *
+ * @typedef {Array<Pair>} Pairs
+ *   All find and replaced.
+ *
+ * @typedef Options
+ *   Configuration.
+ * @property {Test | null | undefined} [ignore]
+ *   Test for which nodes to ignore (optional).
+ */
+
+import escape from 'escape-string-regexp'
+import {SKIP, visitParents} from 'unist-util-visit-parents'
+import {convert} from 'unist-util-is'
+
+/**
+ * Find patterns in a tree and replace them.
+ *
+ * The algorithm searches the tree in *preorder* for complete values in `Text`
+ * nodes.
+ * Partial matches are not supported.
+ *
+ * @param {Nodes} tree
+ *   Tree to change.
+ * @param {FindAndReplaceList | FindAndReplaceTuple} list
+ *   Patterns to find.
+ * @param {Options | null | undefined} [options]
+ *   Configuration (optional).
+ * @returns {undefined}
+ *   Nothing.
+ */
+export function findAndReplace(tree, list, options) {
+  const settings = options || {}
+  const ignored = convert(settings.ignore || [])
+  const pairs = toPairs(list)
+  let pairIndex = -1
+
+  while (++pairIndex < pairs.length) {
+    visitParents(tree, visitor)
+  }
+
+  /**
+   * Handle text nodes and skip ignored nodes.
+   *
+   * @type {BuildVisitor<Root>}
+   */
+  function visitor(node, parents, index) {
+    if (node.type === 'text' && typeof index === 'number') {
+      return handler(node, parents, index)
+    }
+
+    if (ignored(node, index, parents[parents.length - 1])) return SKIP
+  }
+
+  /**
+   * Handle a text node which is not in an ignored parent.
+   *
+   * @param {Text} node
+   *   Text node to search in.
+   * @param {Array<Parents>} parents
+   *   Ancestors of `node`.
+   * @param {number} index
+   *   Index of `node` in its parent.
+   * @returns {VisitorResult}
+   *   Where to continue visiting.
+   */
+  function handler(node, parents, index) {
+    const parent = parents[parents.length - 1]
+    const find = pairs[pairIndex][0]
+    const replace = pairs[pairIndex][1]
+    let start = 0
+    let change = false
+    /** @type {Array<PhrasingContent>} */
+    let nodes = []
+
+    find.lastIndex = 0
+
+    let match = find.exec(node.value)
+
+    while (match) {
+      const position = match.index
+      /** @type {RegExpMatchObject} */
+      const matchObject = {
+        index: match.index,
+        input: match.input,
+        stack: [...parents, node]
+      }
+      let value = replace(...match, matchObject)
+
+      if (typeof value === 'string') {
+        value = value.length > 0 ? {type: 'text', value} : undefined
+      }
+
+      if (value !== false) {
+        if (start !== position) {
+          add({type: 'text', value: node.value.slice(start, position)})
+        }
+
+        if (Array.isArray(value)) {
+          for (const child of value) add(child)
+        } else if (value) {
+          add(value)
+        }
+
+        start = position + match[0].length
+        change = true
+      }
+
+      if (value === false || match[0].length === 0) {
+        const code = node.value.codePointAt(position) || 0
+        find.lastIndex =
+          position + (/[uv]/.test(find.flags) && code > 0xff_ff ? 2 : 1)
+      }
+
+      if (!find.global) {
+        break
+      }
+
+      match = find.exec(node.value)
+    }
+
+    if (change) {
+      if (start < node.value.length) {
+        add({type: 'text', value: node.value.slice(start)})
+      }
+
+      parent.children.splice(index, 1, ...nodes)
+    } else {
+      nodes = [node]
+    }
+
+    return index + nodes.length
+
+    /**
+     * Add a node.
+     *
+     * @param {PhrasingContent} child
+     *   Node to add.
+     * @returns {undefined}
+     *   Nothing.
+     */
+    function add(child) {
+      const previous = nodes[nodes.length - 1]
+
+      if (previous && previous.type === 'text' && child.type === 'text') {
+        previous.value += child.value
+      } else {
+        nodes.push(child)
+      }
+    }
+  }
+}
+
+/**
+ * Turn a tuple or a list of tuples into pairs.
+ *
+ * @param {FindAndReplaceList | FindAndReplaceTuple} tupleOrList
+ *   Schema.
+ * @returns {Pairs}
+ *   Clean pairs.
+ */
+function toPairs(tupleOrList) {
+  if (!Array.isArray(tupleOrList)) {
+    throw new TypeError('Expected find and replace tuple or list of tuples')
+  }
+
+  /** @type {Pairs} */
+  const result = []
+
+  const list =
+    !tupleOrList[0] || Array.isArray(tupleOrList[0])
+      ? /** @type {FindAndReplaceList} */ (tupleOrList)
+      : [/** @type {FindAndReplaceTuple} */ (tupleOrList)]
+
+  let index = -1
+
+  while (++index < list.length) {
+    const tuple = list[index]
+    result.push([toExpression(tuple[0]), toFunction(tuple[1])])
+  }
+
+  return result
+}
+
+/**
+ * Turn a find into an expression.
+ *
+ * @param {Find} find
+ *   Pattern to find.
+ * @returns {RegExp}
+ *   Global expression.
+ */
+function toExpression(find) {
+  return typeof find === 'string' ? new RegExp(escape(find), 'g') : find
+}
+
+/**
+ * Turn a replace into a function.
+ *
+ * @param {Replace} replace
+ *   Thing to replace with.
+ * @returns {ReplaceFunction}
+ *   Function that returns that thing.
+ */
+function toFunction(replace) {
+  return typeof replace === 'function'
+    ? replace
+    : function () {
+        return replace
+      }
+}
