@@ -1,0 +1,41 @@
+appId: com.stealthit.desktop
+productName: StealthIt
+copyright: Copyright © 2026 StealthIt
+directories:
+  buildResources: build
+  output: dist
+files:
+  - out/**/*
+  - build/icon.png
+  - build/icon.ico
+  - package.json
+asarUnpack:
+  - node_modules/koffi/**/*
+win:
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+nsis:
+  artifactName: ${productName}-${version}-Setup-${arch}.${ext}
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: false
+  createStartMenuShortcut: true
+portable:
+  artifactName: ${productName}-${version}-Portable-${arch}.${ext}
+mac:
+  target:
+    - dmg
+  category: public.app-category.productivity
+linux:
+  target:
+    - AppImage
+  category: Utility

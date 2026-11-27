@@ -31,3 +31,7 @@ antigravity-original/Docs/
 
 node_modules/
 deepseek-v4-flash/
+claude-opus-5/
+glm-5.3/
+!stealthit-electron/build/
+!stealthit-electron/build/**
