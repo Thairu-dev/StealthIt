@@ -62,7 +62,8 @@ export function registerGlobalHotkeys(windows: WindowManager): void {
   });
 
   tryRegister('CommandOrControl+Enter', () => {
-    windows.showHud(true);
+    // Do not steal focus so open browser dropdowns/menus stay open during screen capture
+    windows.showHud(false);
     windows.sendHotkeyToHud('ask-screen');
   });
 

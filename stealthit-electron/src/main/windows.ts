@@ -508,10 +508,8 @@ export class WindowManager {
       return false;
     }
     this.applyStealthInvariants(this.hud, true);
-    this.hud.show();
-    if (!this.clickThrough) {
-      this.hud.focus();
-    }
+    // Reveal without stealing focus so dropdowns/menus in the active app stay open
+    this.hud.showInactive();
     this.broadcastStealthStatus();
     return true;
   }
