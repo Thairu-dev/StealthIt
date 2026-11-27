@@ -35,3 +35,5 @@ claude-opus-5/
 glm-5.3/
 !stealthit-electron/build/
 !stealthit-electron/build/**
+
+antigravity-original/
